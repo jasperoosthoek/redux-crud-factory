@@ -1,0 +1,23 @@
+{
+    "name": "redux-crud-factory",
+    "version": "0.0.1",
+    "author": "jasperoosthoek",
+    "license": "MIT",
+    "repository": "https://github.com/jasperoosthoek/redux-crud-factory",
+    "description": "Functional factory to create Redux actions and reducerd that interface with a backend",
+    "main": "./scr/index.js",
+    "files": [
+        "src/"
+    ],
+    "devDependencies": {
+        "@babel/core": "^7.14.3",
+        "@babel/cli": "^7.14.3",
+        "@babel/register": "^7.13.16",
+        "@babel/preset-env": "^7.14.4",
+        "redux": "^4.1.0",
+        "axios": "^0.21.0"
+    },
+    "scripts": {
+        "build": "NODE_ENV=production BABEL_ENV=cjs babel src --extensions '.js' --source-maps=true --out-dir build --delete-dir-on-start"
+    }
+}
