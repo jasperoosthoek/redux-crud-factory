@@ -1,0 +1,1 @@
+# redux-crud-factory
