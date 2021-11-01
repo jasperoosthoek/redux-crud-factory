@@ -1,11 +1,10 @@
 {
     "name": "redux-crud-factory",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "jasperoosthoek",
     "license": "MIT",
     "repository": "https://github.com/jasperoosthoek/redux-crud-factory",
     "description": "Functional factory to create Redux actions and reducerd that interface with a backend",
-    "main": "./scr/index.js",
     "files": [
         "src/"
     ],
@@ -17,7 +16,12 @@
         "redux": "^4.1.0",
         "axios": "^0.21.0"
     },
+    "main": "./lib-cjs/index.js",
+    "module": "./lib-esm/index.js",
     "scripts": {
-        "build": "NODE_ENV=production BABEL_ENV=cjs babel src --extensions '.js' --source-maps=true --out-dir build --delete-dir-on-start"
+        "_build": "babel src --extensions '.js' --source-maps=true",
+        "build:cjs": "NODE_ENV=production BABEL_ENV=cjs npm run _build -- --out-dir lib-cjs --delete-dir-on-start",
+        "build:esm": "NODE_ENV=production BABEL_ENV=esm npm run _build -- --out-dir lib-esm --delete-dir-on-start",
+        "prepublishOnly": "npm run build:esm && npm run build:cjs"
     }
 }
