@@ -6,7 +6,9 @@
     "repository": "https://github.com/jasperoosthoek/redux-crud-factory",
     "description": "Functional factory to create Redux actions and reducerd that interface with a backend",
     "files": [
-        "src/"
+        "src/",
+        "lib-cjs/",
+        "lib-esm/"
     ],
     "devDependencies": {
         "@babel/core": "^7.14.3",
