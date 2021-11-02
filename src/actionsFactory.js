@@ -185,6 +185,7 @@ export const formatFunctionNames = (camelCaseName) => {
   };
 };
 
+
 export default (camelCaseName, config) => {
   const {
     route,
@@ -212,6 +213,133 @@ export default (camelCaseName, config) => {
       ]))
     });
 
+  const actionFunctions = {
+    get: (id, { params = {}, callback } = {}) => async dispatch => {
+      dispatch({ type: actionTypes.getIsLoading });
+      try {
+        const response = await axios.get(`${route}${id}/`, { params });
+          dispatch({
+            type: actionTypes.get,
+            payload: response.data,
+            ...getParent(response.data, parent),
+          });
+          if (typeof callback === 'function') callback(response.data);
+      } catch (error) {
+        callIfFunc(onError, error);
+      };
+    },
+    getList: ({ params = {}, callback } = {}) => async (dispatch, getState) => {
+      const { getListIsLoading } = getState()[camelCaseName];
+      if (getListIsLoading) {
+        return;
+      }
+      dispatch({ type: actionTypes.getList, ...getParent(params, parent) });
+      try {
+        const response = await axios.get(route, { params });
+        dispatch({
+          type: actionTypes.setList,
+          payload: response.data,
+          ...getParent(params, parent),
+        });
+      } catch (error) {
+        callIfFunc(onError, error);
+        dispatch({
+          type: actionTypes.clearList,
+          ...getParent(params, parent),
+        });
+      };
+    },
+    clearList: (obj) => dispatch => dispatch({
+      // Get parent from ownProps
+      type: actionTypes.clearList,
+      // payload: obj[id],
+      ...getParent(obj, parent),
+    }),
+    create: (obj, { callback } = {}) => async dispatch => {
+      dispatch({ type: actionTypes.createIsLoading, ...getParent(obj, parent) });
+      try {
+        const response = await axios.post(route, obj);
+        dispatch({
+          type: actionTypes.create,
+          payload: response.data,
+          ...getParent(response.data, parent),
+        });
+        if (typeof callback === 'function') callback(response.data);
+      } catch (error) {
+        callIfFunc(onError, error);
+      };
+    },
+    update: (obj, { callback } = {}) => async dispatch => {
+      dispatch({ type: actionTypes.updateIsLoading, ...getParent(obj, parent) });
+      try {
+        const response = await axios.patch(`${route}${obj[id]}/`, obj);
+          dispatch({
+            type: actionTypes.update,
+            payload: response.data,
+            ...getParent(obj, parent),
+          });
+          if (typeof callback === 'function') callback(response.data);
+      } catch (error) {
+        callIfFunc(onError, error);
+      };
+    },
+    delete: (obj, { callback } = {}) => async dispatch => {
+      console.log({ obj })
+      dispatch({ type: actionTypes.deleteIsLoading, ...getParent(obj, parent) });
+      try {
+        const response = await axios.delete(`${route}${obj[id]}/`);
+          dispatch({
+            type: actionTypes.delete,
+            payload: obj,
+            ...getParent(obj, parent),
+          });
+          if (typeof callback === 'function') callback(obj);
+      } catch (error) {
+        callIfFunc(onError, error);
+      };
+    },
+    getAll : (params = {}) => async (dispatch, getState) => {
+      const { getAllIsLoading } = getState()[camelCaseName];
+      if (getAllIsLoading) {
+        return;
+      }
+      // dispatch({ type: actionTypes.clearAll });
+      dispatch({ type: actionTypes.getAllIsLoading });
+      try {
+        const response = await axios.get(route, { params });
+        dispatch({
+          type: actionTypes.setAll,
+          payload: response.data,
+        });
+      } catch (error) {
+        callIfFunc(onError, error);
+        // dispatch({ type: actionTypes.clearAll }); 
+      };
+    },
+    clearAll: (obj) => dispatch => dispatch({
+      type: actionTypes.clearAll,
+    }),
+    select: obj => (dispatch) => {
+      dispatch({
+        type: actionTypes.select,
+        payload: obj,
+        ...getParent(obj, parent),
+      })},
+    unSelect: () => (dispatch, ownProps) => dispatch({
+      type: actionTypes.unSelect,
+      ...getParent(ownProps, parent),
+    }),
+    selectAll: obj => (dispatch, ownProps) => dispatch({
+      type: actionTypes.selectAll,
+      payload: obj,
+      ...getParent(ownProps, parent),
+    }),
+    unSelectAll: obj => (dispatch, ownProps) => dispatch({
+      type: actionTypes.unSelectAll,
+      payload: obj,
+      ...getParent(ownProps, parent),
+    }),
+  };
 
   return {
     ...Object.entries(includeActions)
@@ -250,166 +378,65 @@ export default (camelCaseName, config) => {
     ...actions.get
       ?
         {
-          [`get${functionSingle}`]: (id, { params = {}, callback } = {}) => async dispatch => {
-            dispatch({ type: actionTypes.getIsLoading });
-            try {
-              const response = await axios.get(`${route}${id}/`, { params });
-                dispatch({
-                  type: actionTypes.get,
-                  payload: response.data,
-                  ...getParent(response.data, parent),
-                });
-                if (typeof callback === 'function') callback(response.data);
-            } catch (error) {
-              callIfFunc(onError, error);
-            };
-          },
+          [`get${functionSingle}`]: actionFunctions.get,
+          get: actionFunctions.get,
         }
       : {},
     ...actions.getList
       ?
         {
-          [`get${functionPlural}List`]: ({ params = {}, callback } = {}) => async (dispatch, getState) => {
-            const { getListIsLoading } = getState()[camelCaseName];
-            if (getListIsLoading) {
-              return;
-            }
-            dispatch({ type: actionTypes.getList, ...getParent(params, parent) });
-            try {
-              const response = await axios.get(route, { params });
-              dispatch({
-                type: actionTypes.setList,
-                payload: response.data,
-                ...getParent(params, parent),
-              });
-            } catch (error) {
-              callIfFunc(onError, error);
-              dispatch({
-                type: actionTypes.clearList,
-                ...getParent(params, parent),
-              });
-            };
-          },
-          [`clear${functionPlural}List`]: (obj) => dispatch => dispatch({
-            // Get parent from ownProps
-            type: actionTypes.clearList,
-            // payload: obj[id],
-            ...getParent(obj, parent),
-          }),
+          [`get${functionPlural}List`]: actionFunctions.getList,
+          getList: actionFunctions.getList,
+          [`clear${functionPlural}List`]: actionFunctions.clearList,
+          clearList: actionFunctions.clearList,
         }
       : {},
     ...actions.create
       ?
         {
-          [`create${functionSingle}`]: (obj, { callback } = {}) => async dispatch => {
-            dispatch({ type: actionTypes.createIsLoading, ...getParent(obj, parent) });
-            try {
-              const response = await axios.post(route, obj);
-              dispatch({
-                type: actionTypes.create,
-                payload: response.data,
-                ...getParent(response.data, parent),
-              });
-              if (typeof callback === 'function') callback(response.data);
-            } catch (error) {
-              callIfFunc(onError, error);
-            };
-          },
+          [`create${functionSingle}`]: actionFunctions.create,
+          create: actionFunctions.create,
         }
       : {},
     ...actions.update
       ?
         {
-          [`update${functionSingle}`]: (obj, { callback } = {}) => async dispatch => {
-            dispatch({ type: actionTypes.updateIsLoading, ...getParent(obj, parent) });
-            try {
-              const response = await axios.patch(`${route}${obj[id]}/`, obj);
-                dispatch({
-                  type: actionTypes.update,
-                  payload: response.data,
-                  ...getParent(obj, parent),
-                });
-                if (typeof callback === 'function') callback(response.data);
-            } catch (error) {
-              callIfFunc(onError, error);
-            };
-          },
+          [`update${functionSingle}`]: actionFunctions.update,
+          update: actionFunctions.update,
         }
       : {},
     ...actions.delete
       ?
         {
-          [`delete${functionSingle}`]: (obj, { callback } = {}) => async dispatch => {
-            console.log({ obj })
-            dispatch({ type: actionTypes.deleteIsLoading, ...getParent(obj, parent) });
-            try {
-              const response = await axios.delete(`${route}${obj[id]}/`);
-                dispatch({
-                  type: actionTypes.delete,
-                  payload: obj,
-                  ...getParent(obj, parent),
-                });
-                if (typeof callback === 'function') callback(obj);
-            } catch (error) {
-              callIfFunc(onError, error);
-            };
-          },
+          [`delete${functionSingle}`]: actionFunctions.delete,
+          delete: actionFunctions.delete,
         }
       : {},
     ...parent && actions.getList
       ?
         {
-          [`getAll${functionPlural}`] : (params = {}) => async (dispatch, getState) => {
-            const { getAllIsLoading } = getState()[camelCaseName];
-            if (getAllIsLoading) {
-              return;
-            }
-            // dispatch({ type: actionTypes.clearAll });
-            dispatch({ type: actionTypes.getAllIsLoading });
-            try {
-              const response = await axios.get(route, { params });
-              dispatch({
-                type: actionTypes.setAll,
-                payload: response.data,
-              });
-            } catch (error) {
-              callIfFunc(onError, error);
-              // dispatch({ type: actionTypes.clearAll });      
-            };
-          },
-          [`clearAll${functionPlural}`]: (obj) => dispatch => dispatch({
-            type: actionTypes.clearAll,
-          }),
+          [`getAll${functionPlural}`]: actionFunctions.getAll,
+          getAll: actionFunctions.getAll,
+          [`clearAll${functionPlural}`]: actionFunctions.clearAll,
+          clearAll: actionFunctions.clearAll,
         }
       : {},
     ...actions.select === 'single'
       ?
         {
-          [`select${functionSingle}`]: obj => (dispatch) => {
-            dispatch({
-              type: actionTypes.select,
-              payload: obj,
-              ...getParent(obj, parent),
-            })},
-          [`unSelect${functionSingle}`]: () => (dispatch, ownProps) => dispatch({
-            type: actionTypes.unSelect,
-            ...getParent(ownProps, parent),
-          }),
+          [`select${functionSingle}`]: actionFunctions.select,
+          select: actionFunctions.select,
+          [`unSelect${functionSingle}`]: actionFunctions.unSelect,
+          unSelect: actionFunctions.unSelect,
         }
       : {},
     ...actions.select === 'multiple'
       ?
         {
-          [`selectAll${functionPlural}`]: obj => (dispatch, ownProps) => dispatch({
-            type: actionTypes.selectAll,
-            payload: obj,
-            ...getParent(ownProps, parent),
-          }),
-          [`unSelectAll${functionPlural}`]: obj => (dispatch, ownProps) => dispatch({
-            type: actionTypes.unSelectAll,
-            payload: obj,
-            ...getParent(ownProps, parent),
-          }),
+          [`selectAll${functionPlural}`]: actionFunctions.selectAll,
+          selectAll: actionFunctions.selectAll,
+          [`unSelectAll${functionPlural}`]: actionFunctions.unSelectAll,
+          unSelectAll: actionFunctions.unSelectAll,
         }
       : {},
   };

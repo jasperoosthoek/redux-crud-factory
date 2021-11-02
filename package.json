@@ -1,10 +1,10 @@
 {
     "name": "redux-crud-factory",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "author": "jasperoosthoek",
     "license": "MIT",
     "repository": "https://github.com/jasperoosthoek/redux-crud-factory",
-    "description": "Functional factory to create Redux actions and reducerd that interface with a backend",
+    "description": "Functional factory to create Redux actions and reducers that interface with a backend",
     "files": [
         "src/",
         "lib-cjs/",
