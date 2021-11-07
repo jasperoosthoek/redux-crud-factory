@@ -1,6 +1,6 @@
 # Redux Crud Factory
 
-Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) (create, read, update, and delete) actions that allow a [React`](https://www.npmjs.com/package/react) app to interact with a backend `api`. State management is handled by [`Redux`](https://www.npmjs.com/package/redux) using [`Redux Thunk`](https://www.npmjs.com/package/redux-thunk) middleware. The api calls are performed using [`Axios`](https://www.npmjs.com/package/axios). The backend can be as simple as an `api` based on a [`ViewSet`](https://www.django-rest-framework.org/api-guide/viewsets/) using the [`Django Rest Framework`](https://www.django-rest-framework.org/#example).
+Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) (create, read, update, and delete) actions that allow a [`React`](https://www.npmjs.com/package/react) app to interact with a backend `api`. State management is handled by [`Redux`](https://www.npmjs.com/package/redux) using [`Redux Thunk`](https://www.npmjs.com/package/redux-thunk) middleware. The api calls are performed using [`Axios`](https://www.npmjs.com/package/axios). The backend can be as simple as an `api` based on a [`ViewSet`](https://www.django-rest-framework.org/api-guide/viewsets/) using the [`Django Rest Framework`](https://www.django-rest-framework.org/#example).
 
 The simplest full `CRUD` can be created like this:
 ```
