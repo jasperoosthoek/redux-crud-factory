@@ -31,12 +31,12 @@ console.log(farmAnimalsFactory);
 
 The object `farmAnimalsFactory` contains the following components:
 
-- `actionTypes`: All the Redux action types, for instance `{ getList: 'GET_FARM_ANIMALS_LIST', create: 'CREATE_FARM_ANIMAL', ... }`. Note that name `farmAnimals`, which is assumed to be camelCase, is used to create human readable Redux action types. Single/plural is automatically handled including words like category/categories.
+- `actionTypes`: All the Redux action types, for instance `{ getList: 'GET_FARM_ANIMALS_LIST', create: 'CREATE_FARM_ANIMAL', ... }`. Note that name `farmAnimals` is used to create human readable Redux action types. Single/plural is automatically handled including words like category/categories.
 - `actions`: All available functions that can trigger Redux actions with formatted names: `{ getFarmAnimalsList: ƒ, createFarmAnimal: ƒ, updateFarmAnimal: ƒ, ... }`.
 - `actionsStripped`: Same as `actions` above but with stripped down names: `{ getList: ƒ, create: ƒ, update: ƒ, ... }`.
-- `mapStateToPropsStripped`: The function that allows component to get data from the store: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
-- `mapStateToProps`: Same as `mapStateToProps` however with formatted names: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
-- `reducer`: The Redux reducer function that will handle state management supplied
+- `mapStateToProps`: The function that gets data from the store into our React component: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
+- `mapStateToPropsStripped`:  Same as `mapStateToProps` however with stripped down names: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
+- `reducer`: The Redux reducer function that will handle state management
 - `reducerAsObject`:  The same Redux reducer function supplied as `{ farmAnimals: ƒ }`. This object can be easily used with `combineReducers()` from Redux (see example below) and leads to a *single source of truth* for the object name.
 - `config`: The same `config` object as supplied however it contained all available options.
 
@@ -97,8 +97,7 @@ In the simple example above the specification for a complete `CRUD` are created.
 ]
 ```
 
-The objects are stored in the redux store as:
-
+The objects are saved in the redux store as:
 ```
 {
     farmAnimals: {
@@ -114,9 +113,66 @@ The objects are stored in the redux store as:
                 name: 'Billy',
             },
         },
+        createHasErrored: false
+        createIsLoading: false
+        deleteHasErrored: false
+        deleteIsLoading: false
+        getListHasErrored: false
+        getListIsLoading: false
+        updateHasErrored: false
+        updateIsLoading: false
     },
 }
 ```
 
+Note that the list object is **not** an array but a key/value based on the `id` even though the `api` returns a list. Of course this `id` field.
 
-Note that the list object is **not** an array but a key/value based on the `id` even though the `api` returns a list. Of course this `id` field 
+Now we can get the data and Redux functions in our component (`FarmAnimalsList.js`).
+```
+// import farmAnimalsFactory from ...
+import { connect } from 'react-redux';
+
+// Feel free to use functional components.
+class FarmAnimalsList extends Component {
+    componentDidMount() {
+        this.props.getFarmAnimalsList();
+    }
+
+    render() {
+        const { getFarmAnimalsIsLoading, farmAnimalsList, createFarmAnimal } = this.props;
+        
+        if (getFarmAnimalsIsLoading || !farmAnimalsList) return 'Loading farm animals...';
+        
+        return <ul>
+            {Object.values(farmAnimalsList).map((farmAnimal, key) =>
+                <li key={key}>
+                    The {farmAnimal.type} is called {farmAnimal.name} 
+                </li>
+            )}
+        </ul>;
+    }
+};
+
+export default connect(
+    farmAnimalsFactory.mapStateToProps,
+    farmAnimalsFactory.actions
+)(FarmAnimalsList);
+```
+and
+
+```
+import React, { Component } from 'react';
+import FarmAnimalsList from './FarmAnimals';
+
+class App extends Component {
+    render() {
+        return (
+            <Root>
+                <FarmAnimalsList />
+            </Root>
+        );
+    }
+}
+
+export default App;
+```
