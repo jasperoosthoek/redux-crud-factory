@@ -1,6 +1,6 @@
 # redux-crud-factory
 
-Redux Crud Factory is a declarative toolkit that allows for creating `CRUD` (create, read, update, and delete) actions that allow a React app to interact with a backend `api`. State management is handled by `Redux` using `Thunk` middleware. The backend can be as simple as an `api` based on a `ViewSet` using the `Django Rest Framework`. 
+Redux Crud Factory is a declarative toolkit that allows for creating `CRUD` (create, read, update, and delete) actions that allow a React app to interact with a backend `api`. State management is handled by `Redux` using `Thunk` middleware. The api calls are performed using Axios. The backend can be as simple as an `api` based on a `ViewSet` using the `Django Rest Framework`. 
 
 The simplest full `CRUD` can be created like this:
 ```
@@ -117,5 +117,6 @@ The objects are stored in the redux store as:
     },
 }
 ```
+
 
 Note that the list object is **not** an array but a key/value based on the `id` even though the `api` returns a list. Of course this `id` field 
