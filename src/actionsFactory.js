@@ -252,7 +252,6 @@ export default (camelCaseName, config) => {
     clearList: (obj) => dispatch => dispatch({
       // Get parent from ownProps
       type: actionTypes.clearList,
-      // payload: obj[id],
       ...getParent(obj, parent),
     }),
     create: (obj, { callback } = {}) => async dispatch => {
@@ -303,7 +302,6 @@ export default (camelCaseName, config) => {
       if (getAllIsLoading) {
         return;
       }
-      // dispatch({ type: actionTypes.clearAll });
       dispatch({ type: actionTypes.getAllIsLoading });
       try {
         const response = await axios.get(route, { params });
@@ -313,7 +311,6 @@ export default (camelCaseName, config) => {
         });
       } catch (error) {
         callIfFunc(onError, error);
-        // dispatch({ type: actionTypes.clearAll }); 
       };
     },
     clearAll: (obj) => dispatch => dispatch({
@@ -341,103 +338,151 @@ export default (camelCaseName, config) => {
     }),
   };
 
-  return {
-    ...Object.entries(includeActions)
-      .filter(([action, { isAsync }]) => isAsync)
-      .reduce((obj, [action, { isAsync, route, method = 'get', onResponse, onError: onErrorDefault }]) =>
-        ({
-          ...obj,
-          [action]: (obj, { params = {}, callback, onError } = {}) =>
-            async (dispatch, getState) => {
-              dispatch({ type: actionTypes[`${action}IsLoading`] });
-              try {
-                const response = await axios[method](
-                  typeof route === 'function' ? route(obj) : route,
-                  { params }
-                );
-                onResponse(actionDispatchers(dispatch), response.data, { dispatch, getState, params });
-                if (typeof callback === 'function') {
-                  callback(response.data);
-                };
-              } catch (error) {
-                console.error(error);
-                dispatch({ type: actionTypes[`${action}HasErrored`] });
-                if (typeof onError === 'function') {
-                  callIfFunc(onError, error);
-                }
-                if (typeof onErrorDefault === 'function') {
-                  callIfFunc(onError, error);
-                }
+  const actionsIncluded = Object.entries(includeActions)
+    .filter(([action, { isAsync }]) => isAsync)
+    .reduce((obj, [action, { isAsync, route, method = 'get', onResponse, onError: onErrorDefault }]) =>
+      ({
+        ...obj,
+        [action]: (obj, { params = {}, callback, onError } = {}) =>
+          async (dispatch, getState) => {
+            dispatch({ type: actionTypes[`${action}IsLoading`] });
+            try {
+              const response = await axios[method](
+                typeof route === 'function' ? route(obj) : route,
+                { params }
+              );
+              onResponse(actionDispatchers(dispatch), response.data, { dispatch, getState, params });
+              if (typeof callback === 'function') {
+                callback(response.data);
               };
-            },
-          [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes[`${action}ClearErrored`] }),
-        }),
-        {}
-      ),
-    // Get single, update if exists
-    ...actions.get
-      ?
-        {
-          [`get${functionSingle}`]: actionFunctions.get,
-          get: actionFunctions.get,
-        }
-      : {},
-    ...actions.getList
-      ?
-        {
-          [`get${functionPlural}List`]: actionFunctions.getList,
-          getList: actionFunctions.getList,
-          [`clear${functionPlural}List`]: actionFunctions.clearList,
-          clearList: actionFunctions.clearList,
-        }
-      : {},
-    ...actions.create
-      ?
-        {
-          [`create${functionSingle}`]: actionFunctions.create,
-          create: actionFunctions.create,
-        }
-      : {},
-    ...actions.update
-      ?
-        {
-          [`update${functionSingle}`]: actionFunctions.update,
-          update: actionFunctions.update,
-        }
-      : {},
-    ...actions.delete
-      ?
-        {
-          [`delete${functionSingle}`]: actionFunctions.delete,
-          delete: actionFunctions.delete,
-        }
-      : {},
-    ...parent && actions.getList
-      ?
-        {
-          [`getAll${functionPlural}`]: actionFunctions.getAll,
-          getAll: actionFunctions.getAll,
-          [`clearAll${functionPlural}`]: actionFunctions.clearAll,
-          clearAll: actionFunctions.clearAll,
-        }
-      : {},
-    ...actions.select === 'single'
-      ?
-        {
-          [`select${functionSingle}`]: actionFunctions.select,
-          select: actionFunctions.select,
-          [`unSelect${functionSingle}`]: actionFunctions.unSelect,
-          unSelect: actionFunctions.unSelect,
-        }
-      : {},
-    ...actions.select === 'multiple'
-      ?
-        {
-          [`selectAll${functionPlural}`]: actionFunctions.selectAll,
-          selectAll: actionFunctions.selectAll,
-          [`unSelectAll${functionPlural}`]: actionFunctions.unSelectAll,
-          unSelectAll: actionFunctions.unSelectAll,
-        }
-      : {},
+            } catch (error) {
+              console.error(error);
+              dispatch({ type: actionTypes[`${action}HasErrored`] });
+              if (typeof onError === 'function') {
+                callIfFunc(onError, error);
+              }
+              if (typeof onErrorDefault === 'function') {
+                callIfFunc(onError, error);
+              }
+            };
+          },
+        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes[`${action}ClearErrored`] }),
+      }),
+      {}
+    );
+  
+  return {
+    actionsBare: {
+      ...actionsIncluded,
+      // Get single, update if exists
+      ...actions.get
+        ?
+          {
+            get: actionFunctions.get,
+          }
+        : {},
+      ...actions.getList
+        ?
+          {
+            getList: actionFunctions.getList,
+            clearList: actionFunctions.clearList,
+          }
+        : {},
+      ...actions.create
+        ?
+          {
+            create: actionFunctions.create,
+          }
+        : {},
+      ...actions.update
+        ?
+          {
+            update: actionFunctions.update,
+          }
+        : {},
+      ...actions.delete
+        ?
+          {
+            delete: actionFunctions.delete,
+          }
+        : {},
+      ...parent && actions.getList
+        ?
+          {
+            getAll: actionFunctions.getAll,
+            clearAll: actionFunctions.clearAll,
+          }
+        : {},
+      ...actions.select === 'single'
+        ?
+          {
+            select: actionFunctions.select,
+            unSelect: actionFunctions.unSelect,
+          }
+        : {},
+      ...actions.select === 'multiple'
+        ?
+          {
+            selectAll: actionFunctions.selectAll,
+            unSelectAll: actionFunctions.unSelectAll,
+          }
+        : {},
+    },
+    actions: {
+      ...actionsIncluded,
+      // Get single, update if exists
+      ...actions.get
+        ?
+          {
+            [`get${functionSingle}`]: actionFunctions.get,
+          }
+        : {},
+      ...actions.getList
+        ?
+          {
+            [`get${functionPlural}List`]: actionFunctions.getList,
+            [`clear${functionPlural}List`]: actionFunctions.clearList,
+          }
+        : {},
+      ...actions.create
+        ?
+          {
+            [`create${functionSingle}`]: actionFunctions.create,
+          }
+        : {},
+      ...actions.update
+        ?
+          {
+            [`update${functionSingle}`]: actionFunctions.update,
+          }
+        : {},
+      ...actions.delete
+        ?
+          {
+            [`delete${functionSingle}`]: actionFunctions.delete,
+          }
+        : {},
+      ...parent && actions.getList
+        ?
+          {
+            [`getAll${functionPlural}`]: actionFunctions.getAll,
+            [`clearAll${functionPlural}`]: actionFunctions.clearAll,
+          }
+        : {},
+      ...actions.select === 'single'
+        ?
+          {
+            [`select${functionSingle}`]: actionFunctions.select,
+            [`unSelect${functionSingle}`]: actionFunctions.unSelect,
+          }
+        : {},
+      ...actions.select === 'multiple'
+        ?
+          {
+            [`selectAll${functionPlural}`]: actionFunctions.selectAll,
+            [`unSelectAll${functionPlural}`]: actionFunctions.unSelectAll,
+          }
+        : {},
+    },
   };
 };

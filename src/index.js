@@ -64,7 +64,7 @@ export default (camelCaseName, cfg) => {
   const config = validateConfig(cfg);
   const at = actionTypes(camelCaseName, config);
   return {
-    actions: actionsFactory(camelCaseName, config),
+    ...actionsFactory(camelCaseName, config),
     actionTypes: at,
     // Reuse actionTypes as there is no reason to create them twice
     reducer: reducerFactory(camelCaseName, config, at),
