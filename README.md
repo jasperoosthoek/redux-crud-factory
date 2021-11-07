@@ -3,7 +3,7 @@
 Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) (create, read, update, and delete) actions that allow a [`React`](https://www.npmjs.com/package/react) app to interact with a backend `api`. State management is handled by [`Redux`](https://www.npmjs.com/package/redux) using [`Redux Thunk`](https://www.npmjs.com/package/redux-thunk) middleware. The api calls are performed using [`Axios`](https://www.npmjs.com/package/axios). The backend can be as simple as an `api` based on a [`ViewSet`](https://www.django-rest-framework.org/api-guide/viewsets/) using the [`Django Rest Framework`](https://www.django-rest-framework.org/#example).
 
 The simplest full `CRUD` can be created like this:
-```
+```javascript
 import reduxCrudFactory from 'redux-crud-factory';
 import axios from 'axios';
 
@@ -41,7 +41,7 @@ The object `farmAnimalsFactory` contains the following components:
 - `config`: The same `config` object as supplied however it contained all available options.
 
 Now connect to the redux store:
-```
+```javascript
 import { Provider } from 'react-redux';
 import { applyMiddleware, createStore, combineReducers } from 'redux';
 // Redux thunk is required middleware
@@ -98,7 +98,7 @@ In the simple example above the specification for a complete `CRUD` are created.
 ```
 
 The objects are saved in the redux store as:
-```
+```javascript
 {
     farmAnimals: {
         list: {
@@ -113,13 +113,13 @@ The objects are saved in the redux store as:
                 name: 'Billy',
             },
         },
-        createHasErrored: false
-        createIsLoading: false
-        deleteHasErrored: false
-        deleteIsLoading: false
-        getListHasErrored: false
-        getListIsLoading: false
-        updateHasErrored: false
+        createHasErrored: false,
+        createIsLoading: false,
+        deleteHasErrored: false,
+        deleteIsLoading: false,
+        getListHasErrored: false,
+        getListIsLoading: false,
+        updateHasErrored: false,
         updateIsLoading: false
     },
 }
@@ -128,7 +128,7 @@ The objects are saved in the redux store as:
 Note that the list object is **not** an array but a key/value pair based on the `id` even though the `api` returns a list. Of course this `id` field can be modified.
 
 Now we can get the data and Redux functions in our component (`FarmAnimalsList.js`).
-```
+```javascript
 // import farmAnimalsFactory from ...
 import { Component } from 'react';
 import { connect } from 'react-redux';
@@ -161,7 +161,7 @@ export default connect(
 ```
 and
 
-```
+```javascript
 import React, { Component } from 'react';
 import FarmAnimalsList from './FarmAnimals';
 
