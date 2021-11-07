@@ -62,12 +62,12 @@ const validateConfig = ({
 
 export default (camelCaseName, cfg) => {
   const config = validateConfig(cfg);
-  const at = actionTypes(camelCaseName, config);
+  // Reuse actionTypes as there is no reason to create them twice
+  const at = actionTypes(camelCaseName, config);;
   return {
-    ...actionsFactory(camelCaseName, config),
     actionTypes: at,
-    // Reuse actionTypes as there is no reason to create them twice
-    reducer: reducerFactory(camelCaseName, config, at),
+    ...actionsFactory(camelCaseName, config),
+    ...reducerFactory(camelCaseName, config, at),
     // Export either mapStateToProps when parent is falsy or mapStateAndOwnPropsToProps when parent is a string
     ...mapToProps(camelCaseName, config),
     config,

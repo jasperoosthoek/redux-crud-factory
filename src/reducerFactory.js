@@ -172,7 +172,7 @@ export default (camelCaseName, config = {}, actionTypes) => {
   } = config;
 
   const subReducer = getSubReducer(camelCaseName, config, actionTypes)
-  return (state, action) => {
+  const reducer = (state, action) => {
     if (!parent) {
       // This is the default reducer
       return subReducer(state, action);
@@ -214,6 +214,10 @@ export default (camelCaseName, config = {}, actionTypes) => {
     };
     return newState;
   };
+  return {
+    reducer,
+    reducerAsObject: { [camelCaseName]: reducer },
+  }
 };
 
 
@@ -251,7 +255,7 @@ export const mapToProps = (camelCaseName, config) => {
     }), {}),
   });
   
-  const mapStateToPropsBare = (state = {}) => ({
+  const mapStateToPropsStripped = (state = {}) => ({
     ...actions.get
       ?
         { getIsLoading: state.getIsLoading }
@@ -315,12 +319,12 @@ export const mapToProps = (camelCaseName, config) => {
   if (!parent) {
     // This is the default mapper
     return {
-      mapStateToPropsBare: (state) => mapStateToPropsBare(state[camelCaseName]),
+      mapStateToPropsStripped: (state) => mapStateToPropsStripped(state[camelCaseName]),
       mapStateToProps: (state) => mapStateToProps(state[camelCaseName]),
     };
   }
   return {
-        mapStateAndOwnPropsToPropsBare: (state, ownProps) => {
+        mapStateAndOwnPropsToPropsStripped: (state, ownProps) => {
           if (typeof ownProps !== 'object') {
             throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
           }
@@ -329,7 +333,7 @@ export const mapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapStateToPropsBare(state[camelCaseName].list[ownProps[parent]])
+                  mapStateToPropsStripped(state[camelCaseName].list[ownProps[parent]])
                 :
                   {
                     // Return embedded list by [parent][key]

@@ -372,7 +372,7 @@ export default (camelCaseName, config) => {
     );
   
   return {
-    actionsBare: {
+    actionsStripped: {
       ...actionsIncluded,
       // Get single, update if exists
       ...actions.get

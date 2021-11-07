@@ -7,6 +7,7 @@ The simplest full `CRUD` can be created like this:
 import reduxCrudFactory from 'redux-crud-factory';
 import axios from 'axios';
 
+// Our object name must be camelCase
 const objectName = 'farmAnimals';
 const config = {
     route: 'https://example.com/api/farm-animals/', // Non-existing route!
@@ -31,13 +32,13 @@ console.log(farmAnimalsFactory);
 The object `farmAnimalsFactory` contains the following components:
 
 - `actionTypes`: All the Redux action types, for instance `{ getList: 'GET_FARM_ANIMALS_LIST', create: 'CREATE_FARM_ANIMAL', ... }`. Note that name `farmAnimals`, which is assumed to be camelCase, is used to create human readable Redux action types. Single/plural is automatically handled including words like category/categories.
-- `actions`: All the functions that can trigger Redux actions, for instance: `{ getList: ƒ, create: ƒ, update: ƒ, ... }`.
-- `actionsFormatted`: Same as actions however using explicit names: `{ getFarmAnimalsList: ƒ, createFarmAnimal: ƒ, updateFarmAnimal: ƒ, ... }`.
-- `config`: The same `config` object as supplied however it contained all options.
-- `mapStateToProps`: The function that allows component to get data from the store: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
-- `mapStateToPropsFormatted`: Same as `mapStateToProps` however with formatted names: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
-- `reducer`: The Redux reducer that will handle state management.
-
+- `actions`: All available functions that can trigger Redux actions with formatted names: `{ getFarmAnimalsList: ƒ, createFarmAnimal: ƒ, updateFarmAnimal: ƒ, ... }`.
+- `actionsStripped`: Same as `actions` above but with stripped down names: `{ getList: ƒ, create: ƒ, update: ƒ, ... }`.
+- `mapStateToPropsStripped`: The function that allows component to get data from the store: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
+- `mapStateToProps`: Same as `mapStateToProps` however with formatted names: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
+- `reducer`: The Redux reducer function that will handle state management supplied
+- `reducerAsObject`:  The same Redux reducer function supplied as `{ farmAnimals: ƒ }`. This object can be easily used with `combineReducers()` from Redux (see example below) and leads to a *single source of truth* for the object name.
+- `config`: The same `config` object as supplied however it contained all available options.
 
 Now connect to the redux store:
 ```
@@ -46,17 +47,19 @@ import { applyMiddleware, createStore, combineReducers } from 'redux';
 // Redux thunk is required middleware
 import thunk from 'redux-thunk';
 
-// Log each redux action without changing the state. Not required but allows us to see what's going on under the hood.
+// Log each redux action without changing the state. Not required but this allows us to see what's going on under the hood.
 const consoleLogReducer = (state = null, { type, ...action }) => {
     console.log(type, action, state);
     return state;
 }
 
-// The `farmAnimals` key in the `rootReducer` needs to match `objectName` above.
-const rootReducer = (state, action) => consoleLogReducer(combineReducers({
-    farmAnimals: farmAnimalsFactory.reducer,
-    // Add more reducers here
-})(state, action), action);
+const rootReducer = (state, action) => consoleLogReducer(
+    combineReducers({
+        ...farmAnimalsFactory.reducerAsObject,
+        // Add more reducers here
+    })(state, action),
+    action
+);
 
 // The `Root` component used in our React App.
 const Root = ({ children, initialState = {} }) => {
@@ -74,10 +77,7 @@ const Root = ({ children, initialState = {} }) => {
         </Provider>
     );
 };
-
 ```
-
-
 
 Here the data will be saved in the redux store like this `{ farmAnimals: { ... } }`. An `axios` instance is required and needs to be supplied.
 
