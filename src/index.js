@@ -42,7 +42,7 @@ const validateConfig = ({
             delete: !!actions.delete,
           },
         ...!actions || !actions.select
-          ? {}
+          ? { select: false }
           : actions.select === 'multiple'
             ? {
                 select: 'multiple',
