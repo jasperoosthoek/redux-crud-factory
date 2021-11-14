@@ -56,7 +56,10 @@ const consoleLogReducer = (state = null, { type, ...action }) => {
 const rootReducer = (state, action) => consoleLogReducer(
     combineReducers({
         ...farmAnimalsFactory.reducerAsObject,
-        // Add more reducers here
+        // The above is identical to:
+        // farmAnimals: farmAnimalsFactory.reducer,
+
+        // Add more reducers here...
     })(state, action),
     action
 );
@@ -82,7 +85,7 @@ const Root = ({ children, initialState = {} }) => {
 Here the data will be saved in the redux store like this `{ farmAnimals: { ... } }`. An `axios` instance is required and needs to be supplied.
 
 In the simple example above the specification for a complete `CRUD` are created. The api response is assumed to be:
-```
+```javascript
 [
     {
         id: 1,

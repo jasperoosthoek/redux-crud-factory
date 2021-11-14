@@ -168,6 +168,7 @@ export default (camelCaseName, config = {}, actionTypes) => {
     byKey,
     includeProps,
     parent,
+    recursive,
     selectedId,
   } = config;
 
@@ -207,10 +208,34 @@ export default (camelCaseName, config = {}, actionTypes) => {
           }
           obj[o[parent]].list[o[byKey]] = o;
         });
+        if (recursive) {
+          // Create empty state too for children of this object
+          action.payload.map((o) => {
+            if (!obj[o[id]]) {
+              obj[o[id]] = getInitialState(config);
+            }
+          });
+        }
         return {
           ...initialStateRoot,
           list: obj,
         };
+      case actionTypes.create:
+      case actionTypes.update:
+        if (recursive && !newState[action.payload[id]]) {
+          // A recursive object is created or updated, create empty state for the children of this object.
+          // Note that the parent key does not necessarily needs to be the primery key that is considered unmutable.
+          // It can also be another key and it is allowed to change. Therefore, handle the update case as well
+          // and also check if action.payload[id] already exists.
+          return {
+            ...newState,
+            list: {
+              ...newState.list,
+              [action.payload[id]]: getInitialState(config),
+            }
+          }
+        }
+      break
     };
     return newState;
   };

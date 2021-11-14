@@ -7,6 +7,7 @@ const validateConfig = ({
   byKey = null,
   includeProps = null,
   parent = null,
+  recursive = false,
   route = null,
   actions = null,
   includeActions = {},
@@ -22,10 +23,14 @@ const validateConfig = ({
     delete: true,
     select: 'single',
   };
+  if (recursive && !parent) {
+    console.error('The option "recursive" is only valid when "parent" is set.')
+  }
   const newConfig = {
     id,
     byKey: byKey ? byKey : id,
     parent,
+    recursive,
     includeProps,
     axios,
     onError,

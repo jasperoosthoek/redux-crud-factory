@@ -283,7 +283,6 @@ export default (camelCaseName, config) => {
       };
     },
     delete: (obj, { callback } = {}) => async dispatch => {
-      console.log({ obj })
       dispatch({ type: actionTypes.deleteIsLoading, ...getParent(obj, parent) });
       try {
         const response = await axios.delete(`${route}${obj[id]}/`);
