@@ -54,7 +54,7 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
   return (state, action) => {
     const newState = state || getInitialState(config);
 
-    for (let [action, { isAsync }] of Object.entries(includeActions).filter(([action, { isAsync}]) => isAsync)) {
+    for (let [action, { isAsync }] of Object.entries(includeActions).filter(([action, { isAsync }]) => isAsync)) {
       let actionIsLoading = `${action}IsLoading`;
       let actionHasErrored = `${action}HasErrored`;
       switch (action.type) {
@@ -329,7 +329,8 @@ export const mapToProps = (camelCaseName, config) => {
       : {},
     ...actions.getList
       ?
-        { [`${camelCaseName}List`]: state.list }
+        // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
+        { [`${camelCaseName}List`]: state.list || {}}
       : {},
     ...actions.select === 'single'
       ?
