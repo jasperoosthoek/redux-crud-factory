@@ -7,6 +7,7 @@ const validateConfig = ({
   byKey = null,
   includeProps = null,
   parent = null,
+  parentId = 'id',
   recursive = false,
   route = null,
   actions = null,
@@ -30,7 +31,12 @@ const validateConfig = ({
     id,
     byKey: byKey ? byKey : id,
     parent,
-    recursive,
+    ...parent
+      ? {
+            parentId,
+            recursive,
+        }
+      : {},
     includeProps,
     axios,
     onError,
@@ -38,8 +44,7 @@ const validateConfig = ({
     actions: {
       ...!actions
         ? defaultActions
-        :
-          {
+        : {
             get: !!actions.get,
             getList: !!actions.getList,
             create: !!actions.create,

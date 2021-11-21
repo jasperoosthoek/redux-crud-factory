@@ -251,6 +251,7 @@ export const mapToProps = (camelCaseName, config) => {
     id,
     byKey,
     parent,
+    parentId,
     includeProps,
     select,
     selectedId,
@@ -354,12 +355,15 @@ export const mapToProps = (camelCaseName, config) => {
           if (typeof ownProps !== 'object') {
             throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
           }
+          const parentFromProp = ownProps[parent];
+          // When the parent is an object, retrieve the parentKey by using parentId from the object
+          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentKey] : parentFromProp
           return ({
               // If the parent key is not specified in ownProps then it is assumed to be null
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapStateToPropsStripped(state[camelCaseName].list[ownProps[parent]])
+                  mapStateToPropsStripped(state[camelCaseName].list[parentKey])
                 :
                   {
                     // Return embedded list by [parent][key]
@@ -383,12 +387,15 @@ export const mapToProps = (camelCaseName, config) => {
           if (typeof ownProps !== 'object') {
             throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
           }
+          const parentFromProp = ownProps[parent];
+          // When the parent is an object, retrieve the parentKey by using parentId from the object
+          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentKey] : parentFromProp
           return ({
               // If the parent key is not specified in ownProps then it is assumed to be null
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapStateToProps(state[camelCaseName].list[ownProps[parent]])
+                  mapStateToProps(state[camelCaseName].list[parentKey])
                 :
                   {
                     // Return embedded list by [parent][key]
