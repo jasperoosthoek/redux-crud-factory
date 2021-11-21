@@ -357,7 +357,7 @@ export const mapToProps = (camelCaseName, config) => {
           }
           const parentFromProp = ownProps[parent];
           // When the parent is an object, retrieve the parentKey by using parentId from the object
-          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentKey] : parentFromProp
+          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentId] : parentFromProp
           return ({
               // If the parent key is not specified in ownProps then it is assumed to be null
               ...ownProps[parent] || ownProps[parent] === null
@@ -389,7 +389,7 @@ export const mapToProps = (camelCaseName, config) => {
           }
           const parentFromProp = ownProps[parent];
           // When the parent is an object, retrieve the parentKey by using parentId from the object
-          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentKey] : parentFromProp
+          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentId] : parentFromProp
           return ({
               // If the parent key is not specified in ownProps then it is assumed to be null
               ...ownProps[parent] || ownProps[parent] === null
