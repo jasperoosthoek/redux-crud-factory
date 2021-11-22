@@ -168,11 +168,6 @@ const formatActionTypes = (camelCaseName, config) => {
   };
 }
 
-// If parent is defined, the parent is taken from the obj. Otherwise an empty object ({}) is returned
-const getParent = (obj, parent) => {
-  return parent ? { 'parent': obj[parent] } : {};
-}
-
 export const actionTypes = formatActionTypes;
 
 export const formatFunctionNames = (camelCaseName) => {
@@ -192,6 +187,7 @@ export default (camelCaseName, config) => {
     axios,
     onError,
     parent,
+    parentId,
     actionTypeStyle,
     id,
     actions,
@@ -201,6 +197,15 @@ export default (camelCaseName, config) => {
   const { actionSingle, actionPlural } = formatActionNames(camelCaseName);
   const actionTypes = formatActionTypes(camelCaseName, config);
 
+  
+  const getParentObj = (obj) => {
+    // If parent is defined, the parent is taken from the obj. Otherwise an empty object ({}) is returned
+    if (!parent) return {};
+    const parentFromObj = obj[parent];
+    // Allow parent in object to be an object itself, if so the id is found by parentId
+    return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
+  }
+
   const actionDispatchers = (dispatch) => ({
     ...Object.fromEntries(
       Object.keys(actionTypes).map(action => [
@@ -208,7 +213,7 @@ export default (camelCaseName, config) => {
         obj => dispatch({
           type: actionTypes[action],
           payload: obj,
-          ...getParent(obj, parent),
+          ...getParentObj(obj),
         }),
       ]))
     });
@@ -221,7 +226,7 @@ export default (camelCaseName, config) => {
           dispatch({
             type: actionTypes.get,
             payload: response.data,
-            ...getParent(response.data, parent),
+            ...getParentObj(response.data),
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
@@ -233,35 +238,35 @@ export default (camelCaseName, config) => {
       if (getListIsLoading) {
         return;
       }
-      dispatch({ type: actionTypes.getList, ...getParent(params, parent) });
+      dispatch({ type: actionTypes.getList, ...getParentObj(params, parent) });
       try {
         const response = await axios.get(route, { params });
         dispatch({
           type: actionTypes.setList,
           payload: response.data,
-          ...getParent(params, parent),
+          ...getParentObj(params),
         });
       } catch (error) {
         callIfFunc(onError, error);
         dispatch({
           type: actionTypes.clearList,
-          ...getParent(params, parent),
+          ...getParentObj(params),
         });
       };
     },
     clearList: (obj) => dispatch => dispatch({
       // Get parent from ownProps
       type: actionTypes.clearList,
-      ...getParent(obj, parent),
+      ...getParentObj(obj),
     }),
     create: (obj, { callback } = {}) => async dispatch => {
-      dispatch({ type: actionTypes.createIsLoading, ...getParent(obj, parent) });
+      dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.post(route, obj);
         dispatch({
           type: actionTypes.create,
           payload: response.data,
-          ...getParent(response.data, parent),
+          ...getParentObj(response.data),
         });
         if (typeof callback === 'function') callback(response.data);
       } catch (error) {
@@ -269,13 +274,13 @@ export default (camelCaseName, config) => {
       };
     },
     update: (obj, { callback } = {}) => async dispatch => {
-      dispatch({ type: actionTypes.updateIsLoading, ...getParent(obj, parent) });
+      dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.patch(`${route}${obj[id]}/`, obj);
           dispatch({
             type: actionTypes.update,
             payload: response.data,
-            ...getParent(obj, parent),
+            ...getParentObj(obj),
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
@@ -283,13 +288,13 @@ export default (camelCaseName, config) => {
       };
     },
     delete: (obj, { callback } = {}) => async dispatch => {
-      dispatch({ type: actionTypes.deleteIsLoading, ...getParent(obj, parent) });
+      dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.delete(`${route}${obj[id]}/`);
           dispatch({
             type: actionTypes.delete,
             payload: obj,
-            ...getParent(obj, parent),
+            ...getParentObj(obj),
           });
           if (typeof callback === 'function') callback(obj);
       } catch (error) {
@@ -319,21 +324,21 @@ export default (camelCaseName, config) => {
       dispatch({
         type: actionTypes.select,
         payload: obj,
-        ...getParent(obj, parent),
+        ...getParentObj(obj),
       })},
     unSelect: () => (dispatch, ownProps) => dispatch({
       type: actionTypes.unSelect,
-      ...getParent(ownProps, parent),
+      ...getParentObj(ownProps),
     }),
     selectAll: obj => (dispatch, ownProps) => dispatch({
       type: actionTypes.selectAll,
       payload: obj,
-      ...getParent(ownProps, parent),
+      ...getParentObj(ownProps),
     }),
     unSelectAll: obj => (dispatch, ownProps) => dispatch({
       type: actionTypes.unSelectAll,
       payload: obj,
-      ...getParent(ownProps, parent),
+      ...getParentObj(ownProps),
     }),
   };
 
