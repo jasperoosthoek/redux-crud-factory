@@ -344,16 +344,16 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((obj, [action, { isAsync, route, method = 'get', onResponse, onError: onErrorDefault }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', onResponse, onError: onErrorDefault }]) =>
       ({
-        ...obj,
+        ...o,
         [action]: (obj, { params = {}, callback, onError } = {}) =>
           async (dispatch, getState) => {
             dispatch({ type: actionTypes[`${action}IsLoading`] });
             try {
               const response = await axios[method](
                 typeof route === 'function' ? route(obj) : route,
-                { params }
+                obj
               );
               onResponse(actionDispatchers(dispatch), response.data, { dispatch, getState, params });
               if (typeof callback === 'function') {
