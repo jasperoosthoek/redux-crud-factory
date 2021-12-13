@@ -344,12 +344,13 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((o, [action, { isAsync, route, method = 'get', onResponse, onError: onErrorDefault }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', onResponse, onError: onCustomError }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback, onError } = {}) =>
+        [action]: (obj, { params = {}, callback } = {}) =>
           async (dispatch, getState) => {
             dispatch({ type: actionTypes[`${action}IsLoading`] });
+
             try {
               const response = await axios[method](
                 typeof route === 'function' ? route(obj) : route,
@@ -360,14 +361,9 @@ export default (camelCaseName, config) => {
                 callback(response.data);
               };
             } catch (error) {
-              console.error(error);
-              dispatch({ type: actionTypes[`${action}HasErrored`] });
-              if (typeof onError === 'function') {
-                callIfFunc(onError, error);
-              }
-              if (typeof onErrorDefault === 'function') {
-                callIfFunc(onError, error);
-              }
+              dispatch({ type: actionTypes[`${action}HasErrored`], payload: error })
+              callIfFunc(onError, error);
+              callIfFunc(onCustomError, error);
             };
           },
         [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes[`${action}ClearErrored`] }),
