@@ -83,28 +83,57 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             ? { [selectedId]: null }
             : {},
           getListIsLoading: false,
+          getListHasErrored: false,
         };
       case actionTypes.getListIsLoading:
         return {
           ...newState,
           getListIsLoading: action.dispatch === false ? false : true,
+          getListHasErrored: false,
+        };
+      case actionTypes.getListHasErrored:
+        return {
+          ...newState,
+          getListIsLoading: false,
+          getListHasErrored: action.dispatch || false,
         };
       case actionTypes.getIsLoading:
         return {
           ...newState,
           getIsLoading: action.dispatch === false ? false : true,
+          getHasErrored: false,
+        };
+      case actionTypes.getHasErrored:
+        return {
+          ...newState,
+          getIsLoading: false,
+          getHasErrored: action.dispatch || false,
         };
       case actionTypes.set:
-      case actionTypes.create:
         return {
           ...newState,
           list: { ...newState.list, [action.payload[byKey]]: action.payload },
           createIsLoading: false,
+          createHasErrored: false,
+        };
+      case actionTypes.update:
+        return {
+          ...newState,
+          list: { ...newState.list, [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload } },
+          updateIsLoading: false,
+          updateHasErrored: false,
         };
       case actionTypes.createIsLoading:
         return {
           ...newState,
           createIsLoading: action.dispatch === false ? false : true,
+          createHasErrored: false,
+        };
+      case actionTypes.createHasErrored:
+        return {
+          ...newState,
+          createIsLoading: false,
+          createHasErrored: action.dispatch || false,
         };
       case actionTypes.delete:
         const newList = { ...newState.list };
@@ -120,11 +149,19 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             : {},
           list: newList,
           deleteIsLoading: false,
+          deleteHasErrored: false,
         };
       case actionTypes.deleteIsLoading:
         return {
           ...newState,
           deleteIsLoading: action.dispatch === false ? false : true,
+          deleteHasErrored: false,
+        };
+      case actionTypes.deleteHasErrored:
+        return {
+          ...newState,
+          deleteIsLoading: false,
+          deleteHasErrored: action.dispatch || false,
         };
       case actionTypes.update:
         return {
@@ -134,11 +171,19 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             [action.payload[byKey]]: action.payload,
           },
           updateIsLoading: false,
+          updateHasErrored: false,
         };
       case actionTypes.updateIsLoading:
         return {
           ...newState,
           updateIsLoading: action.dispatch === false ? false : true,
+          updateHasErrored: false,
+        };
+      case actionTypes.updateHasErrored:
+        return {
+          ...newState,
+          updateIsLoading: false,
+          updateHasErrored: action.dispatch || false,
         };
       case actionTypes.select:
         return {
@@ -194,6 +239,13 @@ export default (camelCaseName, config = {}, actionTypes) => {
         return {
           ...newState,
           getAllIsLoading: action.dispatch === false ? false : true,
+          getAllHasErrored: false,
+        };
+      case actionTypes.getAllHasErrored:
+        return {
+          ...newState,
+          getAllIsLoading: false,
+          getAllIsHasErrored: action.dispatch || false,
         };
       case actionTypes.clearAll:
         return {

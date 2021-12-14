@@ -6,6 +6,7 @@ const HAS_ERRORED = 'HAS_ERRORED';
 const CLEAR_ERROR = 'CLEAR_ERROR';
 const GET = 'GET';
 const GET_IS_LOADING = 'GET_IS_LOADING';
+const GET_HAS_ERRORED = 'GET_HAS_ERRORED';
 const LIST = 'LIST';
 const SET = 'SET';
 const GET_LIST = 'GET_LIST';
@@ -15,10 +16,13 @@ const CLEAR_ALL = 'CLEAR_ALL';
 const SET_ALL = 'SET_ALL';
 const CREATE = 'CREATE';
 const CREATE_IS_LOADING = 'CREATE_IS_LOADING';
+const CREATE_HAS_ERRORED = 'CREATE_HAS_ERRORED';
 const UPDATE = 'UPDATE';
 const UPDATE_IS_LOADING = 'UPDATE_IS_LOADING';
+const UPDATE_HAS_ERRORED = 'UPDATE_HAS_ERRORED';
 const DELETE = 'DELETE';
 const DELETE_IS_LOADING = 'DELETE_IS_LOADING';
+const DELETE_HAS_ERRORED = 'DELETE_HAS_ERRORED';
 const SELECT = 'SELECT';
 const SELECT_ALL = 'SELECT_ALL';
 const UN_SELECT = 'UN_SELECT';
@@ -26,6 +30,7 @@ const UN_SELECT_ALL = 'UN_SELECT_ALL';
 const CLEAR = 'CLEAR';
 const CLEAR_LIST = 'CLEAR_LIST';
 const GET_ALL_IS_LOADING = 'GET_ALL_IS_LOADING';
+const GET_ALL_HAS_ERRORED = 'GET_ALL_HAS_ERRORED';
 
 const getActionTypes = (actionPrefix, actionName, actionSuffix) => ({
   [`${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`]:
@@ -66,6 +71,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             get: actionTypeStyle(GET),
             getIsLoading: actionTypeStyle(GET_IS_LOADING),
+            getHasErrored: actionTypeStyle(GET_HAS_ERRORED),
             set: actionTypeStyle(SET),
           }
         : {},
@@ -74,6 +80,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             create: actionTypeStyle(CREATE),
             createIsLoading: actionTypeStyle(CREATE_IS_LOADING),
+            createHasErrored: actionTypeStyle(CREATE_HAS_ERRORED),
           }
         : {},
       ...actions.update
@@ -81,6 +88,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             update: actionTypeStyle(UPDATE),
             updateIsLoading: actionTypeStyle(UPDATE_IS_LOADING),
+            updateHasErrored: actionTypeStyle(UPDATE_HAS_ERRORED),
           }
         : {},
       ...actions.delete
@@ -88,6 +96,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             delete: `${DELETE}_${actionSingle}`,
             deleteIsLoading: actionTypeStyle(DELETE_IS_LOADING),
+            deleteHasErrored: actionTypeStyle(DELETE_HAS_ERRORED),
           }
         : {},
       ...actions.getList
@@ -117,6 +126,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             getAll: actionTypeStyle(GET_ALL),
             getAllIsLoading: actionTypeStyle(GET_ALL_IS_LOADING),
+            getAllHasErrored: actionTypeStyle(GET_ALL_HAS_ERRORED),
             setAll: actionTypeStyle(SET_ALL),
             clearAll: actionTypeStyle(CLEAR_ALL),
           }
@@ -230,6 +240,7 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
+        dispatch({ type: actionTypes.getHasErrored });
         callIfFunc(onError, error);
       };
     },
@@ -254,29 +265,44 @@ export default (camelCaseName, config) => {
         });
       };
     },
+    set: (obj) => dispatch => dispatch({
+      type: actionTypes.set,
+      payload: obj,
+      ...getParentObj(obj),
+    }),
+    setList: (obj) => dispatch => dispatch({
+      type: actionTypes.setList,
+      payload: obj,
+      ...getParentObj(obj),
+    }),
+    setAll: (obj) => dispatch => dispatch({
+      type: actionTypes.setAll,
+      payload: obj,
+    }),
     clearList: (obj) => dispatch => dispatch({
       // Get parent from ownProps
       type: actionTypes.clearList,
       ...getParentObj(obj),
     }),
-    create: (obj, { callback } = {}) => async dispatch => {
+    create: (obj, { callback, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.post(route, obj);
+        const response = await axios.post(route, obj, { params });
         dispatch({
-          type: actionTypes.create,
+          type: actionTypes.set,
           payload: response.data,
           ...getParentObj(response.data),
         });
         if (typeof callback === 'function') callback(response.data);
       } catch (error) {
+        dispatch({ type: actionTypes.createHasErrored, ...getParentObj(obj, parent) });
         callIfFunc(onError, error);
       };
     },
-    update: (obj, { callback } = {}) => async dispatch => {
+    update: (obj, { callback, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.patch(`${route}${obj[id]}/`, obj);
+        const response = await axios.patch(`${route}${obj[id]}/`, obj, { params });
           dispatch({
             type: actionTypes.update,
             payload: response.data,
@@ -284,13 +310,14 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
+        dispatch({ type: actionTypes.updateHasErrored, ...getParentObj(obj, parent) });
         callIfFunc(onError, error);
       };
     },
-    delete: (obj, { callback } = {}) => async dispatch => {
+    delete: (obj, { callback, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.delete(`${route}${obj[id]}/`);
+        const response = await axios.delete(`${route}${obj[id]}/`, obj, { params });
           dispatch({
             type: actionTypes.delete,
             payload: obj,
@@ -298,10 +325,11 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(obj);
       } catch (error) {
+        dispatch({ type: actionTypes.deleteHasErrored, ...getParentObj(obj, parent) });
         callIfFunc(onError, error);
       };
     },
-    getAll : (params = {}) => async (dispatch, getState) => {
+    getAll : ({ callback, params } = {}) => async (dispatch, getState) => {
       const { getAllIsLoading } = getState()[camelCaseName];
       if (getAllIsLoading) {
         return;
@@ -314,6 +342,7 @@ export default (camelCaseName, config) => {
           payload: response.data,
         });
       } catch (error) {
+        dispatch({ type: actionTypes.getAllHasErrored });
         callIfFunc(onError, error);
       };
     },
@@ -344,7 +373,7 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((o, [action, { isAsync, route, method = 'get', onResponse, onError: onCustomError }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, onError: onCustomError }]) =>
       ({
         ...o,
         [action]: (obj, { params = {}, callback } = {}) =>
@@ -354,7 +383,7 @@ export default (camelCaseName, config) => {
             try {
               const response = await axios[method](
                 typeof route === 'function' ? route(obj) : route,
-                obj
+                typeof prepare === 'function' ? prepare(obj) : obj,
               );
               onResponse(actionDispatchers(dispatch), response.data, { dispatch, getState, params });
               if (typeof callback === 'function') {
@@ -379,12 +408,14 @@ export default (camelCaseName, config) => {
         ?
           {
             get: actionFunctions.get,
+            set: actionFunctions.set,
           }
         : {},
       ...actions.getList
         ?
           {
             getList: actionFunctions.getList,
+            setList: actionFunctions.setList,
             clearList: actionFunctions.clearList,
           }
         : {},
@@ -392,6 +423,7 @@ export default (camelCaseName, config) => {
         ?
           {
             create: actionFunctions.create,
+            set: actionFunctions.set,
           }
         : {},
       ...actions.update
@@ -410,6 +442,7 @@ export default (camelCaseName, config) => {
         ?
           {
             getAll: actionFunctions.getAll,
+            setAll: actionFunctions.setAll,
             clearAll: actionFunctions.clearAll,
           }
         : {},
@@ -435,12 +468,14 @@ export default (camelCaseName, config) => {
         ?
           {
             [`get${functionSingle}`]: actionFunctions.get,
+            [`set${functionSingle}`]: actionFunctions.set,
           }
         : {},
       ...actions.getList
         ?
           {
             [`get${functionPlural}List`]: actionFunctions.getList,
+            [`set${functionPlural}List`]: actionFunctions.setList,
             [`clear${functionPlural}List`]: actionFunctions.clearList,
           }
         : {},
@@ -448,6 +483,7 @@ export default (camelCaseName, config) => {
         ?
           {
             [`create${functionSingle}`]: actionFunctions.create,
+            [`set${functionSingle}`]: actionFunctions.set,
           }
         : {},
       ...actions.update
@@ -466,6 +502,7 @@ export default (camelCaseName, config) => {
         ?
           {
             [`getAll${functionPlural}`]: actionFunctions.getAll,
+            [`setAll${functionPlural}`]: actionFunctions.setAll,
             [`clearAll${functionPlural}`]: actionFunctions.clearAll,
           }
         : {},
