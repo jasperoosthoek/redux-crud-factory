@@ -7,11 +7,12 @@ import {
 const initialStateRoot = {
   list: {},
   getAllIsLoading: false,
+  getAllError: null,
 };
 
 const getAsyncInitialState = action => ({
   [`${action}IsLoading`]: false,
-  [`${action}HasErrored`]: false,
+  [`${action}Error`]: null,
 })
 
 const getInitialState = ({
@@ -56,21 +57,21 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
 
     for (let [action, { isAsync }] of Object.entries(includeActions).filter(([action, { isAsync }]) => isAsync)) {
       let actionIsLoading = `${action}IsLoading`;
-      let actionHasErrored = `${action}HasErrored`;
+      let actionError = `${action}Error`;
       switch (action.type) {
         case actionTypes[actionIsLoading]:
-          let isLoading = action.dispatch === false ? false : true;
+          let isLoading = action.payload === false ? false : true;
           return {
             ...newState,
             [actionIsLoading]: isLoading,
-            ...isLoading ? { [actionHasErrored]: false } : {},
+            ...isLoading ? { [actionError]: false } : {},
           };
-        case actionTypes[actionHasErrored]:
-          let hasErrored = action.dispatch ? action.dispatch : false;
+        case actionTypes[actionError]:
+          let Error = action.payload ? action.payload : false;
           return {
             ...newState,
-            [actionHasErrored]: hasErrored,
-            ...hasErrored ? { [actionIsLoading]: false } : {},
+            [actionError]: Error,
+            ...Error ? { [actionIsLoading]: false } : {},
           };
       }
     }
@@ -83,57 +84,57 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             ? { [selectedId]: null }
             : {},
           getListIsLoading: false,
-          getListHasErrored: false,
+          getListError: null,
         };
       case actionTypes.getListIsLoading:
         return {
           ...newState,
-          getListIsLoading: action.dispatch === false ? false : true,
-          getListHasErrored: false,
+          getListIsLoading: action.payload === false ? false : true,
+          getListError: null,
         };
-      case actionTypes.getListHasErrored:
+      case actionTypes.getListError:
         return {
           ...newState,
           getListIsLoading: false,
-          getListHasErrored: action.dispatch || false,
+          getListError: action.payload || null,
         };
       case actionTypes.getIsLoading:
         return {
           ...newState,
-          getIsLoading: action.dispatch === false ? false : true,
-          getHasErrored: false,
+          getIsLoading: action.payload === false ? false : true,
+          getError: null,
         };
-      case actionTypes.getHasErrored:
+      case actionTypes.getError:
         return {
           ...newState,
           getIsLoading: false,
-          getHasErrored: action.dispatch || false,
+          getError: action.payload || null,
         };
       case actionTypes.set:
         return {
           ...newState,
           list: { ...newState.list, [action.payload[byKey]]: action.payload },
           createIsLoading: false,
-          createHasErrored: false,
+          createError: null,
         };
       case actionTypes.update:
         return {
           ...newState,
           list: { ...newState.list, [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload } },
           updateIsLoading: false,
-          updateHasErrored: false,
+          updateError: null,
         };
       case actionTypes.createIsLoading:
         return {
           ...newState,
-          createIsLoading: action.dispatch === false ? false : true,
-          createHasErrored: false,
+          createIsLoading: action.payload === false ? false : true,
+          createError: null,
         };
-      case actionTypes.createHasErrored:
+      case actionTypes.createError:
         return {
           ...newState,
           createIsLoading: false,
-          createHasErrored: action.dispatch || false,
+          createError: action.payload || null,
         };
       case actionTypes.delete:
         const newList = { ...newState.list };
@@ -149,19 +150,19 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             : {},
           list: newList,
           deleteIsLoading: false,
-          deleteHasErrored: false,
+          deleteError: null,
         };
       case actionTypes.deleteIsLoading:
         return {
           ...newState,
-          deleteIsLoading: action.dispatch === false ? false : true,
-          deleteHasErrored: false,
+          deleteIsLoading: action.payload === false ? false : true,
+          deleteError: null,
         };
-      case actionTypes.deleteHasErrored:
+      case actionTypes.deleteError:
         return {
           ...newState,
           deleteIsLoading: false,
-          deleteHasErrored: action.dispatch || false,
+          deleteError: action.payload || null,
         };
       case actionTypes.update:
         return {
@@ -171,19 +172,19 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
             [action.payload[byKey]]: action.payload,
           },
           updateIsLoading: false,
-          updateHasErrored: false,
+          updateError: null,
         };
       case actionTypes.updateIsLoading:
         return {
           ...newState,
-          updateIsLoading: action.dispatch === false ? false : true,
-          updateHasErrored: false,
+          updateIsLoading: action.payload === false ? false : true,
+          updateError: null,
         };
-      case actionTypes.updateHasErrored:
+      case actionTypes.updateError:
         return {
           ...newState,
           updateIsLoading: false,
-          updateHasErrored: action.dispatch || false,
+          updateError: action.payload || null,
         };
       case actionTypes.select:
         return {
@@ -238,14 +239,14 @@ export default (camelCaseName, config = {}, actionTypes) => {
       case actionTypes.getAllIsLoading:
         return {
           ...newState,
-          getAllIsLoading: action.dispatch === false ? false : true,
-          getAllHasErrored: false,
+          getAllIsLoading: action.payload === false ? false : true,
+          getAllError: null,
         };
-      case actionTypes.getAllHasErrored:
+      case actionTypes.getAllError:
         return {
           ...newState,
           getAllIsLoading: false,
-          getAllIsHasErrored: action.dispatch || false,
+          getAllError: action.payload || null,
         };
       case actionTypes.clearAll:
         return {
@@ -327,7 +328,7 @@ export const mapToProps = (camelCaseName, config) => {
         ?
           {
             [`${action}IsLoading`]: state[`${action}IsLoading`],
-            [`${action}HasErrored`]: state[`${action}HasErrored`],
+            [`${action}Error`]: state[`${action}Error`],
           }
         : {},
     }), {}),
@@ -336,19 +337,31 @@ export const mapToProps = (camelCaseName, config) => {
   const mapStateToPropsStripped = (state = {}) => ({
     ...actions.get
       ?
-        { getIsLoading: state.getIsLoading }
+        {
+          getIsLoading: state.getIsLoading,
+          getError: state.getError,
+        }
       : {},
     ...actions.create
       ?
-        { createIsLoading: state.createIsLoading }
+        {
+          createIsLoading: state.createIsLoading,
+          createError: state.createError,
+        }
       : {},
     ...actions.update
       ?
-        { updateIsLoading: state.updateIsLoading }
+        {
+          updateIsLoading: state.updateIsLoading,
+          updateError: state.updateError,
+        }
       : {},
     ...actions.delete
       ?
-        { deleteIsLoading: state.deleteIsLoading }
+        {
+          deleteIsLoading: state.deleteIsLoading,
+          deleteError: state.deleteError,
+        }
       : {},
     ...actions.getList
       ?
@@ -366,19 +379,31 @@ export const mapToProps = (camelCaseName, config) => {
   const mapStateToProps = (state = {}) => ({
     ...actions.get
       ?
-        { [`get${functionPlural}IsLoading`]: state.getIsLoading }
+        {
+          [`get${functionPlural}IsLoading`]: state.getIsLoading,
+          [`get${functionPlural}Error`]: state.getError,
+        }
       : {},
     ...actions.create
       ?
-        { [`create${functionSingle}IsLoading`]: state.createIsLoading }
+        {
+          [`create${functionSingle}IsLoading`]: state.createIsLoading,
+          [`create${functionSingle}Error`]: state.createError,
+        }
       : {},
     ...actions.update
       ?
-        { [`update${functionSingle}IsLoading`]: state.updateIsLoading }
+        {
+          [`update${functionSingle}IsLoading`]: state.updateIsLoading,
+          [`update${functionSingle}Error`]: state.updateError,
+        }
       : {},
     ...actions.delete
       ?
-        { [`delete${functionSingle}IsLoading`]: state.deleteIsLoading }
+        {
+          [`delete${functionSingle}IsLoading`]: state.deleteIsLoading,
+          [`delete${functionSingle}Error`]: state.deleteError,
+        }
       : {},
     ...actions.getList
       ?
@@ -430,7 +455,7 @@ export const mapToProps = (camelCaseName, config) => {
                 ?
                   {
                     getAllIsLoading: state[camelCaseName].getAllIsLoading,
-                    // [`${parent}List`]: Object.keys(state[camelCaseName].list),
+                    getAllError: state[camelCaseName].getAllError,
                   }
                 : {},
             }
@@ -462,7 +487,7 @@ export const mapToProps = (camelCaseName, config) => {
                 ?
                   {
                     [`getAll${functionPlural}IsLoading`]: state[camelCaseName].getAllIsLoading,
-                    // [`${parent}List`]: Object.keys(state[camelCaseName].list),
+                    [`getAll${functionPlural}Error`]: state[camelCaseName].getAllError,
                   }
                 : {},
             }

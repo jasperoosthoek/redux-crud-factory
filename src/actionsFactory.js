@@ -2,11 +2,11 @@
 import { callIfFunc, camelToSnakeCase, snakeToCamelCase, toUpperCamelCase, pluralToSingle } from './utils';
 
 const IS_LOADING = 'IS_LOADING';
-const HAS_ERRORED = 'HAS_ERRORED';
+const ERROR = 'ERROR';
 const CLEAR_ERROR = 'CLEAR_ERROR';
 const GET = 'GET';
 const GET_IS_LOADING = 'GET_IS_LOADING';
-const GET_HAS_ERRORED = 'GET_HAS_ERRORED';
+const GET_ERROR = 'GET_ERROR';
 const LIST = 'LIST';
 const SET = 'SET';
 const GET_LIST = 'GET_LIST';
@@ -16,13 +16,13 @@ const CLEAR_ALL = 'CLEAR_ALL';
 const SET_ALL = 'SET_ALL';
 const CREATE = 'CREATE';
 const CREATE_IS_LOADING = 'CREATE_IS_LOADING';
-const CREATE_HAS_ERRORED = 'CREATE_HAS_ERRORED';
+const CREATE_ERROR = 'CREATE_ERROR';
 const UPDATE = 'UPDATE';
 const UPDATE_IS_LOADING = 'UPDATE_IS_LOADING';
-const UPDATE_HAS_ERRORED = 'UPDATE_HAS_ERRORED';
+const UPDATE_ERROR = 'UPDATE_ERROR';
 const DELETE = 'DELETE';
 const DELETE_IS_LOADING = 'DELETE_IS_LOADING';
-const DELETE_HAS_ERRORED = 'DELETE_HAS_ERRORED';
+const DELETE_ERROR = 'DELETE_ERROR';
 const SELECT = 'SELECT';
 const SELECT_ALL = 'SELECT_ALL';
 const UN_SELECT = 'UN_SELECT';
@@ -30,7 +30,7 @@ const UN_SELECT_ALL = 'UN_SELECT_ALL';
 const CLEAR = 'CLEAR';
 const CLEAR_LIST = 'CLEAR_LIST';
 const GET_ALL_IS_LOADING = 'GET_ALL_IS_LOADING';
-const GET_ALL_HAS_ERRORED = 'GET_ALL_HAS_ERRORED';
+const GET_ALL_ERROR = 'GET_ALL_ERROR';
 
 const getActionTypes = (actionPrefix, actionName, actionSuffix) => ({
   [`${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`]:
@@ -43,7 +43,7 @@ const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
   return {
     [func]: action,
     [`${func}IsLoading`]: `${action}_${IS_LOADING}`,
-    [`${func}HasErrored`]: `${action}_${HAS_ERRORED}`,
+    [`${func}Error`]: `${action}_${ERROR}`,
     [`${func}ClearError`]: `${action}_${CLEAR_ERROR}`,
   };
 }
@@ -71,7 +71,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             get: actionTypeStyle(GET),
             getIsLoading: actionTypeStyle(GET_IS_LOADING),
-            getHasErrored: actionTypeStyle(GET_HAS_ERRORED),
+            getError: actionTypeStyle(GET_ERROR),
             set: actionTypeStyle(SET),
           }
         : {},
@@ -80,7 +80,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             create: actionTypeStyle(CREATE),
             createIsLoading: actionTypeStyle(CREATE_IS_LOADING),
-            createHasErrored: actionTypeStyle(CREATE_HAS_ERRORED),
+            createError: actionTypeStyle(CREATE_ERROR),
           }
         : {},
       ...actions.update
@@ -88,7 +88,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             update: actionTypeStyle(UPDATE),
             updateIsLoading: actionTypeStyle(UPDATE_IS_LOADING),
-            updateHasErrored: actionTypeStyle(UPDATE_HAS_ERRORED),
+            updateError: actionTypeStyle(UPDATE_ERROR),
           }
         : {},
       ...actions.delete
@@ -96,7 +96,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             delete: `${DELETE}_${actionSingle}`,
             deleteIsLoading: actionTypeStyle(DELETE_IS_LOADING),
-            deleteHasErrored: actionTypeStyle(DELETE_HAS_ERRORED),
+            deleteError: actionTypeStyle(DELETE_ERROR),
           }
         : {},
       ...actions.getList
@@ -126,7 +126,7 @@ const formatActionTypes = (camelCaseName, config) => {
           {
             getAll: actionTypeStyle(GET_ALL),
             getAllIsLoading: actionTypeStyle(GET_ALL_IS_LOADING),
-            getAllHasErrored: actionTypeStyle(GET_ALL_HAS_ERRORED),
+            getAllError: actionTypeStyle(GET_ALL_ERROR),
             setAll: actionTypeStyle(SET_ALL),
             clearAll: actionTypeStyle(CLEAR_ALL),
           }
@@ -240,7 +240,7 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
-        dispatch({ type: actionTypes.getHasErrored });
+        dispatch({ type: actionTypes.getError, payload: error });
         callIfFunc(onError, error);
       };
     },
@@ -295,7 +295,7 @@ export default (camelCaseName, config) => {
         });
         if (typeof callback === 'function') callback(response.data);
       } catch (error) {
-        dispatch({ type: actionTypes.createHasErrored, ...getParentObj(obj, parent) });
+        dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
       };
     },
@@ -310,7 +310,7 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(response.data);
       } catch (error) {
-        dispatch({ type: actionTypes.updateHasErrored, ...getParentObj(obj, parent) });
+        dispatch({ type: actionTypes.updateError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
       };
     },
@@ -325,7 +325,7 @@ export default (camelCaseName, config) => {
           });
           if (typeof callback === 'function') callback(obj);
       } catch (error) {
-        dispatch({ type: actionTypes.deleteHasErrored, ...getParentObj(obj, parent) });
+        dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
       };
     },
@@ -342,7 +342,7 @@ export default (camelCaseName, config) => {
           payload: response.data,
         });
       } catch (error) {
-        dispatch({ type: actionTypes.getAllHasErrored });
+        dispatch({ type: actionTypes.getAllError, payload: error });
         callIfFunc(onError, error);
       };
     },
@@ -390,7 +390,7 @@ export default (camelCaseName, config) => {
                 callback(response.data);
               };
             } catch (error) {
-              dispatch({ type: actionTypes[`${action}HasErrored`], payload: error })
+              dispatch({ type: actionTypes[`${action}Error`], payload: error })
               callIfFunc(onError, error);
               callIfFunc(onCustomError, error);
             };
