@@ -145,7 +145,7 @@ const formatActionTypes = (camelCaseName, config) => {
         }),
         {}
     ),
-    ...getActionTypes(SET, actionPlural),
+    ...getActionTypes(SET, actionSingle),
     ...getActionTypes(SET, actionPlural, LIST),
     ...getActionTypes(CLEAR, actionPlural, LIST),
     ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionPlural),
@@ -377,18 +377,18 @@ export default (camelCaseName, config) => {
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, onError: onCustomError }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback, ...restProps } = {}) =>
+        [action]: (obj, { params = {}, callback, ...restArgs } = {}) =>
           async (dispatch, getState) => {
-            dispatch({ type: actionTypes[`${action}IsLoading`] });
+            dispatch({ type: actionTypes[`${action}IsLoading`], ...getParentObj(obj, parent) });
 
             try {
               const response = await axios[method](
-                typeof route === 'function' ? route(obj, { ...restProps, getState, params }) : route,
-                typeof prepare === 'function' ? prepare(obj, { ...restProps, dispatch, getState, params }) : obj,
+                typeof route === 'function' ? route(obj, { ...restArgs, getState, params }) : route,
+                typeof prepare === 'function' ? prepare(obj, { ...restArgs, getState, params }) : obj,
               );
-              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false });
+              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...getParentObj(obj, parent) });
 
-              onResponse(response.data, { ...actionDispatchers(dispatch), dispatch, getState, params });
+              onResponse(response.data, { ...actionDispatchers(dispatch) }, { ...restArgs, dispatch, getState, params });
               if (typeof callback === 'function') {
                 callback(response.data);
               };
