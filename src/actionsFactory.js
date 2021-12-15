@@ -216,6 +216,7 @@ export default (camelCaseName, config) => {
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
 
+  // This function is able to supply the include props function with all actions.
   const actionDispatchers = (dispatch) => ({
     ...Object.fromEntries(
       Object.keys(actionTypes).map(action => [
@@ -376,16 +377,16 @@ export default (camelCaseName, config) => {
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, onError: onCustomError }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback } = {}) =>
+        [action]: (obj, { params = {}, callback, ...restProps } = {}) =>
           async (dispatch, getState) => {
             dispatch({ type: actionTypes[`${action}IsLoading`] });
 
             try {
               const response = await axios[method](
-                typeof route === 'function' ? route(obj) : route,
-                typeof prepare === 'function' ? prepare(obj) : obj,
+                typeof route === 'function' ? route(obj, { ...restProps, getState, params }) : route,
+                typeof prepare === 'function' ? prepare(obj, { ...restProps, dispatch, getState, params }) : obj,
               );
-              onResponse(actionDispatchers(dispatch), response.data, { dispatch, getState, params });
+              onResponse(response.data, { ...actionDispatchers(dispatch), dispatch, getState, params });
               if (typeof callback === 'function') {
                 callback(response.data);
               };
