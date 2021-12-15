@@ -55,9 +55,9 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
   return (state, action) => {
     const newState = state || getInitialState(config);
 
-    for (let [action, { isAsync }] of Object.entries(includeActions).filter(([action, { isAsync }]) => isAsync)) {
-      let actionIsLoading = `${action}IsLoading`;
-      let actionError = `${action}Error`;
+    for (let [act, { isAsync }] of Object.entries(includeActions).filter(([dummy, { isAsync }]) => isAsync)) {
+      let actionIsLoading = `${act}IsLoading`;
+      let actionError = `${act}Error`;
       switch (action.type) {
         case actionTypes[actionIsLoading]:
           let isLoading = action.payload === false ? false : true;

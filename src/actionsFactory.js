@@ -386,6 +386,8 @@ export default (camelCaseName, config) => {
                 typeof route === 'function' ? route(obj, { ...restProps, getState, params }) : route,
                 typeof prepare === 'function' ? prepare(obj, { ...restProps, dispatch, getState, params }) : obj,
               );
+              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false });
+
               onResponse(response.data, { ...actionDispatchers(dispatch), dispatch, getState, params });
               if (typeof callback === 'function') {
                 callback(response.data);
