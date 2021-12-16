@@ -134,17 +134,6 @@ const formatActionTypes = (camelCaseName, config) => {
     };
   }
   return {
-
-    ...Object.entries(includeActions)
-      .reduce((obj, [action, { isAsync }]) => 
-        ({
-          ...obj,
-          ...isAsync
-            ? getAsyncActionTypes(camelToSnakeCase(action))
-            : getActionTypes(camelToSnakeCase(action)),
-        }),
-        {}
-    ),
     ...getActionTypes(SET, actionSingle),
     ...getActionTypes(SET, actionPlural, LIST),
     ...getActionTypes(CLEAR, actionPlural, LIST),
@@ -175,6 +164,16 @@ const formatActionTypes = (camelCaseName, config) => {
           ...getActionTypes(CLEAR_ALL, actionPlural),
         }
       : {},
+    ...Object.entries(includeActions)
+      .reduce((obj, [action, { isAsync }]) => 
+        ({
+          ...obj,
+          ...isAsync
+            ? getAsyncActionTypes(camelToSnakeCase(action))
+            : getActionTypes(camelToSnakeCase(action)),
+        }),
+        {}
+    ),
   };
 }
 
@@ -405,7 +404,6 @@ export default (camelCaseName, config) => {
   
   return {
     actionsStripped: {
-      ...actionsIncluded,
       // Get single, update if exists
       ...actions.get
         ?
@@ -463,9 +461,9 @@ export default (camelCaseName, config) => {
             unSelectAll: actionFunctions.unSelectAll,
           }
         : {},
+      ...actionsIncluded,
     },
     actions: {
-      ...actionsIncluded,
       // Get single, update if exists
       ...actions.get
         ?
@@ -523,6 +521,7 @@ export default (camelCaseName, config) => {
             [`unSelectAll${functionPlural}`]: actionFunctions.unSelectAll,
           }
         : {},
+      ...actionsIncluded,
     },
   };
 };
