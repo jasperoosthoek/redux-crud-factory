@@ -373,19 +373,22 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, onError: onCustomError }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: parentFunc, onError: onCustomError }]) =>
       ({
         ...o,
         [action]: (obj, { params = {}, callback, ...restArgs } = {}) =>
           async (dispatch, getState) => {
-            dispatch({ type: actionTypes[`${action}IsLoading`], ...getParentObj(obj, parent) });
+            const parentObj = typeof parentFunc === 'function'
+                ? { parent: parentFunc(obj, { ...restArgs, getState, params }) }
+                : getParentObj(obj, parent)
+            dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {
               const response = await axios[method](
                 typeof route === 'function' ? route(obj, { ...restArgs, getState, params }) : route,
                 typeof prepare === 'function' ? prepare(obj, { ...restArgs, getState, params }) : obj,
               );
-              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...getParentObj(obj, parent) });
+              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...parentObj });
 
               onResponse(response.data, { ...actionDispatchers(dispatch) }, { ...restArgs, dispatch, getState, params });
               if (typeof callback === 'function') {
