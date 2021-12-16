@@ -373,14 +373,18 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: parentFunc, onError: onCustomError }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError }]) =>
       ({
         ...o,
         [action]: (obj, { params = {}, callback, ...restArgs } = {}) =>
           async (dispatch, getState) => {
-            const parentObj = typeof parentFunc === 'function'
-                ? { parent: parentFunc(obj, { ...restArgs, getState, params }) }
-                : getParentObj(obj, parent)
+            const parentObj = !customParent
+                ? getParentObj(obj, parent)
+                : { 
+                    parent: typeof customParent === 'function'
+                      ? customParent(obj, { ...restArgs, getState, params })
+                      : customParent
+                  };
             dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {
