@@ -229,7 +229,7 @@ export default (camelCaseName, config) => {
     });
 
   const actionFunctions = {
-    get: (id, { params = {}, callback } = {}) => async dispatch => {
+    get: (id, { params = {}, callback, onError: onCallerError } = {}) => async dispatch => {
       dispatch({ type: actionTypes.getIsLoading });
       try {
         const response = await axios.get(`${route}${id}/`, { params });
@@ -242,9 +242,10 @@ export default (camelCaseName, config) => {
       } catch (error) {
         dispatch({ type: actionTypes.getError, payload: error });
         callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
-    getList: ({ params = {}, callback } = {}) => async (dispatch, getState) => {
+    getList: ({ params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
       const { getListIsLoading } = getState()[camelCaseName];
       if (getListIsLoading) {
         return;
@@ -257,12 +258,14 @@ export default (camelCaseName, config) => {
           payload: response.data,
           ...getParentObj(params),
         });
+        callIfFunc(callback, response.data);
       } catch (error) {
-        callIfFunc(onError, error);
         dispatch({
           type: actionTypes.clearList,
           ...getParentObj(params),
         });
+        callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
     set: (obj) => dispatch => dispatch({
@@ -284,7 +287,7 @@ export default (camelCaseName, config) => {
       type: actionTypes.clearList,
       ...getParentObj(obj),
     }),
-    create: (obj, { callback, params } = {}) => async dispatch => {
+    create: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.post(route, obj, { params });
@@ -293,13 +296,14 @@ export default (camelCaseName, config) => {
           payload: response.data,
           ...getParentObj(response.data),
         });
-        if (typeof callback === 'function') callback(response.data);
+        callIfFunc(callback, response.data);
       } catch (error) {
         dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
-    update: (obj, { callback, params } = {}) => async dispatch => {
+    update: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.patch(`${route}${obj[id]}/`, obj, { params });
@@ -308,28 +312,30 @@ export default (camelCaseName, config) => {
             payload: response.data,
             ...getParentObj(obj),
           });
-          if (typeof callback === 'function') callback(response.data);
+        callIfFunc(callback, response.data);
       } catch (error) {
         dispatch({ type: actionTypes.updateError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
-    delete: (obj, { callback, params } = {}) => async dispatch => {
+    delete: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
       dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.delete(`${route}${obj[id]}/`, obj, { params });
-          dispatch({
-            type: actionTypes.delete,
-            payload: obj,
-            ...getParentObj(obj),
-          });
-          if (typeof callback === 'function') callback(obj);
+        dispatch({
+          type: actionTypes.delete,
+          payload: obj,
+          ...getParentObj(obj),
+        });
+        callIfFunc(callback);
       } catch (error) {
         dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
-    getAll : ({ callback, params } = {}) => async (dispatch, getState) => {
+    getAll : ({ callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
       const { getAllIsLoading } = getState()[camelCaseName];
       if (getAllIsLoading) {
         return;
@@ -341,9 +347,11 @@ export default (camelCaseName, config) => {
           type: actionTypes.setAll,
           payload: response.data,
         });
+        callIfFunc(callback, response.data);
       } catch (error) {
         dispatch({ type: actionTypes.getAllError, payload: error });
         callIfFunc(onError, error);
+        callIfFunc(onCallerError, error);
       };
     },
     clearAll: (obj) => dispatch => dispatch({
@@ -376,7 +384,7 @@ export default (camelCaseName, config) => {
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback, ...restArgs } = {}) =>
+        [action]: (obj, { params = {}, callback, onError: onCallerError, ...restArgs } = {}) =>
           async (dispatch, getState) => {
             const parentObj = !customParent
                 ? getParentObj(obj, parent)
@@ -395,13 +403,12 @@ export default (camelCaseName, config) => {
               dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...parentObj });
 
               onResponse(response.data, { ...actionDispatchers(dispatch) }, { ...restArgs, dispatch, getState, params });
-              if (typeof callback === 'function') {
-                callback(response.data);
-              };
+              callIfFunc(callback, response.data);
             } catch (error) {
-              dispatch({ type: actionTypes[`${action}Error`], payload: error })
+              dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });
               callIfFunc(onError, error);
               callIfFunc(onCustomError, error);
+              callIfFunc(onCallerError, error);
             };
           },
         [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes[`${action}ClearErrored`] }),

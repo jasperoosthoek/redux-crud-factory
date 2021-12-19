@@ -64,10 +64,10 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
           return {
             ...newState,
             [actionIsLoading]: isLoading,
-            ...isLoading ? { [actionError]: false } : {},
+            ...isLoading ? { [actionError]: null } : {},
           };
         case actionTypes[actionError]:
-          let Error = action.payload ? action.payload : false;
+          let Error = action.payload ? action.payload : null;
           return {
             ...newState,
             [actionError]: Error,
