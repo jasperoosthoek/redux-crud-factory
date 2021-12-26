@@ -114,6 +114,9 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
         return {
           ...newState,
           list: { ...newState.list, [action.payload[byKey]]: action.payload },
+          // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
+          getIsLoading: false,
+          getError: null,
           createIsLoading: false,
           createError: null,
         };
@@ -299,7 +302,7 @@ export default (camelCaseName, config = {}, actionTypes) => {
 };
 
 
-export const mapToProps = (camelCaseName, config) => {
+export const getMapToProps = (camelCaseName, config) => {
   const {
     id,
     byKey,
@@ -311,7 +314,7 @@ export const mapToProps = (camelCaseName, config) => {
     actions,
     includeActions,
   } = config;
-  const { functionSingle, functionPlural } = formatFunctionNames(camelCaseName);
+  const { functionSingle, functionPlural, camelCaseNameSingle } = formatFunctionNames(camelCaseName);
   const camelCaseId = toUpperCamelCase(byKey);
   
   const propsIncluded = (state) => ({
@@ -333,8 +336,16 @@ export const mapToProps = (camelCaseName, config) => {
         : {},
     }), {}),
   });
+
+  // If the id is given to a component as a prop, this function will fetch the object from
+  // the state or give null when the object is not found
+  const singleObjectByIdProp = (state, ownProps) => ({
+    ...ownProps[id]
+      ? { [camelCaseNameSingle]: state.list[ownProps[id]] || null } 
+      : {}
+  })
   
-  const mapStateToPropsStripped = (state = {}) => ({
+  const mapToPropsStripped = (state = {}, ownProps = {}) => ({
     ...actions.get
       ?
         {
@@ -365,7 +376,11 @@ export const mapToProps = (camelCaseName, config) => {
       : {},
     ...actions.getList
       ?
-        { list: state.list }
+        {
+          list: state.list,
+          getListIsLoading: state.getListIsLoading,
+          getListError: state.getListError,
+        }
       : {},
     ...actions.select === 'single'
       ?
@@ -375,13 +390,14 @@ export const mapToProps = (camelCaseName, config) => {
         }
       : {},
     ...propsIncluded(state),
+    ...singleObjectByIdProp(state, ownProps),
   });
-  const mapStateToProps = (state = {}) => ({
+  const mapToProps = (state = {}, ownProps = {}) => ({
     ...actions.get
       ?
         {
-          [`get${functionPlural}IsLoading`]: state.getIsLoading,
-          [`get${functionPlural}Error`]: state.getError,
+          [`get${functionSingle}IsLoading`]: state.getIsLoading,
+          [`get${functionSingle}Error`]: state.getError,
         }
       : {},
     ...actions.create
@@ -408,7 +424,11 @@ export const mapToProps = (camelCaseName, config) => {
     ...actions.getList
       ?
         // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
-        { [`${camelCaseName}List`]: state.list || {}}
+        {
+          [`${camelCaseName}List`]: state.list || {},
+          [`getList${functionPlural}IsLoading`]: state.getListIsLoading,
+          [`getList${functionPlural}Error`]: state.getListError,
+        }
       : {},
     ...actions.select === 'single'
       ?
@@ -418,17 +438,18 @@ export const mapToProps = (camelCaseName, config) => {
         }
       : {},
     ...propsIncluded(state),
+    ...singleObjectByIdProp(state, ownProps),
   });
 
   if (!parent) {
     // This is the default mapper
     return {
-      mapStateToPropsStripped: (state) => mapStateToPropsStripped(state[camelCaseName]),
-      mapStateToProps: (state) => mapStateToProps(state[camelCaseName]),
+      mapToPropsStripped: (state, ownProps) => mapToPropsStripped(state[camelCaseName], ownProps),
+      mapToProps: (state, ownProps) => mapToProps(state[camelCaseName], ownProps),
     };
   }
   return {
-        mapStateAndOwnPropsToPropsStripped: (state, ownProps) => {
+        mapToPropsStripped: (state, ownProps) => {
           if (typeof ownProps !== 'object') {
             throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
           }
@@ -440,7 +461,7 @@ export const mapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapStateToPropsStripped(state[camelCaseName].list[parentKey])
+                  mapToPropsStripped(state[camelCaseName].list[parentKey])
                 :
                   {
                     // Return embedded list by [parent][key]
@@ -460,7 +481,7 @@ export const mapToProps = (camelCaseName, config) => {
                 : {},
             }
           )},
-        mapStateAndOwnPropsToProps: (state, ownProps) => {
+        mapToProps: (state, ownProps) => {
           if (typeof ownProps !== 'object') {
             throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
           }
@@ -472,7 +493,7 @@ export const mapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapStateToProps(state[camelCaseName].list[parentKey])
+                  mapToProps(state[camelCaseName].list[parentKey])
                 :
                   {
                     // Return embedded list by [parent][key]

@@ -1,5 +1,5 @@
 import actionsFactory, { actionTypes } from './actionsFactory';
-import reducerFactory, { mapToProps } from './reducerFactory';
+import reducerFactory, { getMapToProps } from './reducerFactory';
 import { toUpperCamelCase } from './utils';
 
 const validateConfig = ({
@@ -79,7 +79,7 @@ export default (camelCaseName, cfg) => {
     ...actionsFactory(camelCaseName, config),
     ...reducerFactory(camelCaseName, config, at),
     // Export either mapStateToProps when parent is falsy or mapStateAndOwnPropsToProps when parent is a string
-    ...mapToProps(camelCaseName, config),
+    ...getMapToProps(camelCaseName, config),
     config,
   };
 }

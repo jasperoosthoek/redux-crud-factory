@@ -137,7 +137,7 @@ const formatActionTypes = (camelCaseName, config) => {
     ...getActionTypes(SET, actionSingle),
     ...getActionTypes(SET, actionPlural, LIST),
     ...getActionTypes(CLEAR, actionPlural, LIST),
-    ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionPlural),
+    ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
     ...(actions.create ? getAsyncActionTypes : getActionTypes)(CREATE, actionSingle),
     ...(actions.update ? getAsyncActionTypes : getActionTypes)(UPDATE, actionSingle),
     ...(actions.delete ? getAsyncActionTypes : getActionTypes)(DELETE, actionSingle),
@@ -183,9 +183,9 @@ export const formatFunctionNames = (camelCaseName) => {
   // Turn "upperCamelCaseName" into UpperCamelCaseName
   const upperCamelCaseName = camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
   return {
-    // Naive way of making single from plural. Need to adapt when using words like "categories"
     functionSingle: pluralToSingle(upperCamelCaseName),
     functionPlural: upperCamelCaseName,
+    camelCaseNameSingle: pluralToSingle(camelCaseName),
   };
 };
 
@@ -234,7 +234,7 @@ export default (camelCaseName, config) => {
       try {
         const response = await axios.get(`${route}${id}/`, { params });
           dispatch({
-            type: actionTypes.get,
+            type: actionTypes.set,
             payload: response.data,
             ...getParentObj(response.data),
           });
