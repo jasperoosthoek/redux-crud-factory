@@ -307,11 +307,11 @@ export default (camelCaseName, config) => {
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.patch(`${route}${obj[id]}/`, obj, { params });
-          dispatch({
-            type: actionTypes.update,
-            payload: response.data,
-            ...getParentObj(obj),
-          });
+        dispatch({
+          type: actionTypes.update,
+          payload: response.data,
+          ...getParentObj(obj),
+        });
         callIfFunc(callback, response.data);
       } catch (error) {
         dispatch({ type: actionTypes.updateError, ...getParentObj(obj, parent), payload: error });
