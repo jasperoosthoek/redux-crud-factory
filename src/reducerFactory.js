@@ -426,8 +426,8 @@ export const getMapToProps = (camelCaseName, config) => {
         // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
         {
           [`${camelCaseName}List`]: state.list || {},
-          [`getList${functionPlural}IsLoading`]: state.getListIsLoading,
-          [`getList${functionPlural}Error`]: state.getListError,
+          [`get${functionPlural}ListIsLoading`]: state.getListIsLoading,
+          [`get${functionPlural}ListError`]: state.getListError,
         }
       : {},
     ...actions.select === 'single'
