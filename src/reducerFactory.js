@@ -461,7 +461,9 @@ export const getMapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapToPropsStripped(state[camelCaseName].list[parentKey])
+                  state[camelCaseName].list[parentKey]
+                    ? mapToPropsStripped(state[camelCaseName].list[parentKey], ownProps)
+                    : {}
                 :
                   {
                     // Return embedded list by [parent][key]
@@ -493,7 +495,9 @@ export const getMapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  mapToProps(state[camelCaseName].list[parentKey])
+                  state[camelCaseName].list[parentKey]
+                    ? mapToProps(state[camelCaseName].list[parentKey], ownProps)
+                    : {}
                 :
                   {
                     // Return embedded list by [parent][key]
