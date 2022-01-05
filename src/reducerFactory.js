@@ -22,10 +22,8 @@ const getInitialState = ({
   actions,
   includeActions,
 }) => ({
-  ...actions.getList
-    ?
-      { list: {}, ...getAsyncInitialState('getList') }
-    : {},
+  list: {},
+  ...getAsyncInitialState('getList'),
   ...actions.get ? getAsyncInitialState('get') : {},
   ...actions.create ? getAsyncInitialState('create') : {},
   ...actions.delete ? getAsyncInitialState('delete') : {},
@@ -340,7 +338,7 @@ export const getMapToProps = (camelCaseName, config) => {
   // If the id is given to a component as a prop, this function will fetch the object from
   // the state or give null when the object is not found
   const singleObjectByIdProp = (state, ownProps) => ({
-    ...ownProps[id]
+    ...(typeof ownProps[id] !== 'undefined')
       ? { [camelCaseNameSingle]: state.list[ownProps[id]] || null } 
       : {}
   })
