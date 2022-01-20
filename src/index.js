@@ -1,5 +1,6 @@
 import actionsFactory, { actionTypes } from './actionsFactory';
-import reducerFactory, { getMapToProps } from './reducerFactory';
+import reducerFactory from './reducerFactory';
+import { getMapToProps } from './mappersFactory';
 import { toUpperCamelCase } from './utils';
 
 const validateConfig = ({
