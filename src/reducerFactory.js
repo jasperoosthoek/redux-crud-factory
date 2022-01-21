@@ -221,12 +221,17 @@ export default (camelCaseName, config = {}, actionTypes) => {
   const subReducer = getSubReducer(camelCaseName, config, actionTypes)
   const reducer = (state, action) => {
     if (!parent) {
-      // This is the default reducer
-      return subReducer(state, action) || getInitialState(config);
+      let subState = subReducer(state, action);
+      // subState can either be null or an object:
+      // object: An action in actionTypes was triggered: set state to subState
+      // null: No action in actionTypes was triggered: Return original state or if state has not been properly
+      // initialized (is undefined) return initial state from getInitialState(config).
+      return subState === null ? state || getInitialState(config) : subState;
     }
     const parentKey = action.parent ? action.parent : null;
 
-    const subState = subReducer((state || { list: {} }).list[parentKey], action);// || getInitialState(config)
+    let subState = subReducer((state || { list: {} }).list[parentKey], action);
+
     const newState = {
       ...state ? state : {},
       list: {
