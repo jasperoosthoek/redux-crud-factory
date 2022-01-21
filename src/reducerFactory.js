@@ -202,7 +202,8 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
       case actionTypes.clearList:
         return getInitialState(config);
       default:
-        return newState;
+        // Return null to indicate this reducer did not update
+        return null;
     }
   }
 }
@@ -221,19 +222,23 @@ export default (camelCaseName, config = {}, actionTypes) => {
   const reducer = (state, action) => {
     if (!parent) {
       // This is the default reducer
-      return subReducer(state, action);
+      return subReducer(state, action) || getInitialState(config);
     }
     const parentKey = action.parent ? action.parent : null;
 
+    const subState = subReducer((state || { list: {} }).list[parentKey], action);// || getInitialState(config)
     const newState = {
       ...state ? state : {},
       list: {
         ...state && state.list ? state.list : {},
-        ...action.parent || action.parent === null
-          ? { [parentKey]: subReducer((state || { list: {} }).list[parentKey], action) }
+        ...(action.parent || action.parent === null) && subState !== null
+          // Only update [parentKey] when subState is not null because this might otherwise be triggered by another
+          // reducer with the same parent key
+          ? { [parentKey]: subState }
           : {},
       },
     }
+
     switch (action.type) {
       case actionTypes.getAllIsLoading:
         return {
