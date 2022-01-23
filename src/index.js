@@ -1,7 +1,16 @@
-import actionsFactory, { actionTypes } from './actionsFactory';
+import actionsFactory, { actionTypes, getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import { getMapToProps } from './mappersFactory';
 import { toUpperCamelCase } from './utils';
+
+const defaultActions = {
+  get: true,
+  getList: true,
+  create: true,
+  update: true,
+  delete: true,
+  select: 'single',
+};
 
 const validateConfig = ({
   id = 'id',
@@ -11,23 +20,17 @@ const validateConfig = ({
   parentId = 'id',
   recursive = false,
   route = null,
-  actions = null,
+  actions = defaultActions,
   includeActions = {},
   axios = null,
   onError = null,
   actionTypeStyle = null,
 }) => {
-  const defaultActions = {
-    get: true,
-    getList: true,
-    create: true,
-    update: true,
-    delete: true,
-    select: 'single',
-  };
   if (recursive && !parent) {
     console.error('The option "recursive" is only valid when "parent" is set.')
   }
+  
+  const detailRoute = getDetailRoute(route, id);
   const newConfig = {
     id,
     byKey: byKey ? byKey : id,
@@ -43,24 +46,57 @@ const validateConfig = ({
     onError,
     actionTypeStyle,
     actions: {
-      ...!actions
-        ? defaultActions
-        : {
-            get: !!actions.get,
-            getList: !!actions.getList,
-            create: !!actions.create,
-            update: !!actions.update,
-            delete: !!actions.delete,
-          },
-        ...!actions || !actions.select
-          ? { select: false }
-          : actions.select === 'multiple'
-            ? {
-                select: 'multiple',
-              }
-            : {
-                select: 'single',
-              },
+      ...actions.getList
+        ? { getList: {
+            method: 'get',
+            route,
+            ...typeof actions.getList === 'object' ? actions.getList : {},
+          }}
+        : {},
+      ...parent && actions.getAll
+        ? { getAll: {
+            method: 'get',
+            route,
+            ...typeof actions.getAll === 'object' ? actions.getAll : {},
+          }}
+        : {},
+      ...actions.create
+        ? { create: {
+            method: 'post',
+            route,
+            ...typeof actions.create === 'object' ? actions.create : {},
+          }}
+        : {},
+      ...actions.get
+        ? { get: {
+            method: 'get',
+            route: detailRoute,
+            ...typeof actions.get === 'object' ? actions.get : {},
+          }}
+        : {},
+      ...actions.update
+        ? { update: {
+            method: 'patch',
+            route: detailRoute,
+            ...typeof actions.update === 'object' ? actions.update : {},
+          }}
+        : {},
+      ...actions.delete
+        ? { delete: {
+            method: 'delete',
+            route: detailRoute,
+            ...typeof actions.delete === 'object' ? actions.delete : {},
+          }}
+        : {},
+      ...!actions.select
+        ? { select: false }
+        : actions.select === 'multiple'
+          ? {
+              select: 'multiple',
+            }
+          : {
+              select: 'single',
+            },
     },
     includeActions,
     route,

@@ -189,6 +189,19 @@ export const formatFunctionNames = (camelCaseName) => {
   };
 };
 
+// Convert a list route, e.g '/api/foo' into a detail route '/api/foo/42'
+// Note that trailing slashes are handled automatically: '/api/foo/' becomes '/api/foo/42/'
+export const getDetailRoute = (route, id) => obj =>
+  // To do: assertions for obj, route and id
+  `${
+    route
+  }${
+    route.endsWith('/') ? '' : '/'
+  }${
+    typeof obj === 'object' ? obj[id] : obj
+  }${
+    route.endsWith('/') ? '/' : ''
+  }`;
 
 export default (camelCaseName, config) => {
   const {
@@ -242,26 +255,16 @@ export default (camelCaseName, config) => {
     return state[key];
   }
 
-  const getDetailRoute = obj =>
-    `${
-      route
-    }${
-      route.endsWith('/') ? '' : '/'
-    }${
-      typeof obj === 'object' ? obj[id] : obj
-    }${
-      route.endsWith('/') ? '/' : ''
-    }`
-
   const actionFunctions = {
     get: (id, { params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
       if (getFromState(getState, 'getIsLoading')) {
         return;
       }
+      const { route, method } = actions.get;
 
       dispatch({ type: actionTypes.getIsLoading });
       try {
-        const response = await axios.get(getDetailRoute(id), { params });
+        const response = await axios[method](typeof route === 'function' ? route(id) : route, { params });
           dispatch({
             type: actionTypes.set,
             payload: response.data,
@@ -278,9 +281,10 @@ export default (camelCaseName, config) => {
       if (getFromState(getState, 'getListIsLoading')) {
         return;
       }
+      const { route, method } = actions.getList;
       dispatch({ type: actionTypes.getList, ...getParentObj(params, parent) });
       try {
-        const response = await axios.get(route, { params });
+        const response = await axios[method](route, { params });
         dispatch({
           type: actionTypes.setList,
           payload: response.data,
@@ -316,12 +320,13 @@ export default (camelCaseName, config) => {
       ...getParentObj(obj),
     }),
     create: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'createIsLoading')) {
-        return;
-      }
+      // if (getFromState(getState, 'createIsLoading')) {
+      //   return;
+      // }
+      const { route, method } = actions.create;
       dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.post(route, obj, { params });
+        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
         dispatch({
           type: actionTypes.set,
           payload: response.data,
@@ -335,12 +340,13 @@ export default (camelCaseName, config) => {
       };
     },
     update: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'updateIsLoading')) {
-        return;
-      }
+      // if (getFromState(getState, 'updateIsLoading')) {
+      //   return;
+      // }
+      const { route, method } = actions.update;
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.patch(getDetailRoute(obj), obj, { params });
+        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
         dispatch({
           type: actionTypes.update,
           payload: response.data,
@@ -354,12 +360,13 @@ export default (camelCaseName, config) => {
       };
     },
     delete: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'deleteIsLoading')) {
-        return;
-      }
+      // if (getFromState(getState, 'deleteIsLoading')) {
+      //   return;
+      // }
+      const { route, method } = actions.delete;
       dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.delete(getDetailRoute(obj), obj, { params });
+        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
         dispatch({
           type: actionTypes.delete,
           payload: obj,
@@ -373,12 +380,13 @@ export default (camelCaseName, config) => {
       };
     },
     getAll : ({ callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'getAllIsLoading')) {
-        return;
-      }
+      // if (getFromState(getState, 'getAllIsLoading')) {
+      //   return;
+      // }
+      const { route, method } = actions.getAll;
       dispatch({ type: actionTypes.getAllIsLoading });
       try {
-        const response = await axios.get(route, { params });
+        const response = await axios[method](route, { params });
         dispatch({
           type: actionTypes.setAll,
           payload: response.data,
