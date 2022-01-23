@@ -258,6 +258,7 @@ export default (camelCaseName, config) => {
       if (getFromState(getState, 'getIsLoading')) {
         return;
       }
+
       dispatch({ type: actionTypes.getIsLoading });
       try {
         const response = await axios.get(getDetailRoute(id), { params });
@@ -428,9 +429,10 @@ export default (camelCaseName, config) => {
                       ? customParent(obj, { ...restArgs, getState, params })
                       : customParent
                   };
-            if (getFromState(getState, `${action}IsLoading`)) {
-              return;
-            }
+            
+            // if (getFromState(getState, `${action}IsLoading`)) {
+            //   return;
+            // }
             dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {

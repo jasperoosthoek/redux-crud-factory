@@ -230,10 +230,10 @@ export default (camelCaseName, config = {}, actionTypes) => {
     }
     const parentKey = action.parent ? action.parent : null;
 
-    let subState = subReducer((state || { list: {} }).list[parentKey], action);
+    let subState = subReducer((state || getInitialState(config)).list[parentKey], action);
 
     const newState = {
-      ...state ? state : {},
+      ...state ? state : getInitialState(config),
       list: {
         ...state && state.list ? state.list : {},
         ...(action.parent || action.parent === null) && subState !== null
