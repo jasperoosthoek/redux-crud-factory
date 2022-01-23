@@ -302,7 +302,7 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
     url: typeof route === 'function' ? route(original ? original : obj, { args, getState, params }) : route, 
     params,
     ...obj
-      ? { data: typeof prepare === 'function' ? prepare(obj, args, { getState, params }) : obj }
+      ? { data: typeof prepare === 'function' ? prepare(obj, { args, getState, params }) : obj }
       : {},
   });
 
@@ -548,8 +548,13 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
 
               onResponse(
                 response.data,
-                combineActionDispatchers(dispatch),
-                { args, dispatch, getState, params }
+                {
+                  args,
+                  dispatch,
+                  getState,
+                  params,
+                  ...combineActionDispatchers(dispatch),
+                }
               );
               callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
             } catch (error) {

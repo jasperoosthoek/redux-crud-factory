@@ -130,16 +130,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
           updateIsLoading: false,
           updateError: null,
         };
-        // case actionTypes.update:
-        //   return {
-        //     ...newState,
-        //     list: {
-        //       ...newState.list,
-        //       [action.payload[byKey]]: action.payload,
-        //     },
-        //     updateIsLoading: false,
-        //     updateError: null,
-        //   };
         case actionTypes.updateIsLoading:
           return {
             ...newState,
