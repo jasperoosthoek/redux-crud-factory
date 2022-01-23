@@ -49,6 +49,7 @@ const validateConfig = ({
       ...actions.getList
         ? { getList: {
             method: 'get',
+            prepare: null,
             route,
             ...typeof actions.getList === 'object' ? actions.getList : {},
           }}
@@ -56,6 +57,7 @@ const validateConfig = ({
       ...parent && actions.getAll
         ? { getAll: {
             method: 'get',
+            prepare: null,
             route,
             ...typeof actions.getAll === 'object' ? actions.getAll : {},
           }}
@@ -63,6 +65,7 @@ const validateConfig = ({
       ...actions.create
         ? { create: {
             method: 'post',
+            prepare: null,
             route,
             ...typeof actions.create === 'object' ? actions.create : {},
           }}
@@ -70,6 +73,7 @@ const validateConfig = ({
       ...actions.get
         ? { get: {
             method: 'get',
+            prepare: null,
             route: detailRoute,
             ...typeof actions.get === 'object' ? actions.get : {},
           }}
@@ -77,6 +81,7 @@ const validateConfig = ({
       ...actions.update
         ? { update: {
             method: 'patch',
+            prepare: null,
             route: detailRoute,
             ...typeof actions.update === 'object' ? actions.update : {},
           }}
@@ -84,6 +89,7 @@ const validateConfig = ({
       ...actions.delete
         ? { delete: {
             method: 'delete',
+            prepare: null,
             route: detailRoute,
             ...typeof actions.delete === 'object' ? actions.delete : {},
           }}

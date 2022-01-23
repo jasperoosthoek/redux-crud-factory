@@ -227,6 +227,24 @@ export default (camelCaseName, config) => {
     // Allow parent in object to be an object itself, if so the id is found by parentId
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
+  const mapActions = {
+    get: `get${functionSingle}`,
+    set: `set${functionSingle}`,
+    getList: `get${functionPlural}List`,
+    setList: `set${functionPlural}List`,
+    clearList: `clear${functionPlural}List`,
+    create: `create${functionSingle}`,
+    set: `set${functionSingle}`,
+    update: `update${functionSingle}`,
+    delete: `delete${functionSingle}`,
+    getAll: `getAll${functionPlural}`,
+    setAll: `setAll${functionPlural}`,
+    clearAll: `clearAll${functionPlural}`,
+    select: `select${functionSingle}`,
+    unSelect: `unSelect${functionSingle}`,
+    selectAll: `selectAll${functionPlural}`,
+    unSelectAll: `unSelectAll${functionPlural}`,
+  }
 
   // This function is able to supply the include props function with all actions.
   const actionDispatchers = (dispatch) => ({
@@ -238,7 +256,16 @@ export default (camelCaseName, config) => {
           payload: obj,
           ...getParentObj(obj),
         }),
-      ]))
+      ])),
+    ...Object.fromEntries(
+      Object.keys(actionTypes).map(action => [
+        mapActions[action],
+        obj => dispatch({
+          type: actionTypes[action],
+          payload: obj,
+          ...getParentObj(obj),
+        }),
+      ])),
     });
   
   const getFromState = (getState, key) => {
@@ -255,36 +282,75 @@ export default (camelCaseName, config) => {
     return state[key];
   }
 
+  // Generic call to Axios which handles 
+  const _axios = ({ method, route, params, obj, axiosConfig={}, args, getState, prepare }) => axios({
+    ...axiosConfig,
+    method,
+    url: typeof route === 'function' ? route(obj, { args, getState, params }) : route, 
+    params,
+    ...obj
+      ? { data: typeof prepare === 'function' ? prepare(obj, { args, getState, params }) : obj }
+      : {},
+  });
+
+  // const _asyncAction = (obj, { params = {}, callback, onError: onCallerError, axiosConfig } = {}, action ) => async (dispatch, getState) => {
+  //   const { route, method, prepare } = actions[action];
+
+  //   dispatch({ type: actionTypes[`${action}IsLoading`], ...getParentObj(obj ? obj : params, parent) });
+  //   try {
+  //     const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+  //     const responseAction = (
+  //       action === 'get' || action === 'create'
+  //       ? 'set'
+  //       : action === 'getList'
+  //       ? 'setList'
+  //       : action === 'getAll'
+  //       ? 'setAll'
+  //       : action
+  //     )
+  //     dispatch({
+  //       type: actionTypes[responseAction],
+  //       payload: response.data,
+  //       ...getParentObj(response.data),
+  //     });
+  //     callIfFunc(callback, response.data);
+  //   } catch (error) {
+  //     dispatch({ type: actionTypes.getError, payload: error });
+  //     callIfFunc(onError, error);
+  //     callIfFunc(onCallerError, error);
+  //   };
+  // }
+
   const actionFunctions = {
-    get: (id, { params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
+    get: (obj, { params = {}, callback, onError: onCallerError, axiosConfig, args } = {}) => async (dispatch, getState) => {
       if (getFromState(getState, 'getIsLoading')) {
         return;
       }
-      const { route, method } = actions.get;
+      const { route, method, prepare } = actions.get;
 
-      dispatch({ type: actionTypes.getIsLoading });
+      dispatch({ type: actionTypes.getIsLoading, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
       try {
-        const response = await axios[method](typeof route === 'function' ? route(id) : route, { params });
-          dispatch({
-            type: actionTypes.set,
-            payload: response.data,
-            ...getParentObj(response.data),
-          });
-          if (typeof callback === 'function') callback(response.data);
+        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+        dispatch({
+          type: actionTypes.set,
+          payload: response.data,
+          ...getParentObj(response.data),
+        });
+        callIfFunc(callback, response.data);
       } catch (error) {
         dispatch({ type: actionTypes.getError, payload: error });
         callIfFunc(onError, error);
         callIfFunc(onCallerError, error);
       };
     },
-    getList: ({ params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
+    getList: ({ params = {}, callback, onError: onCallerError, axiosConfig, args } = {}) => async (dispatch, getState) => {
       if (getFromState(getState, 'getListIsLoading')) {
         return;
       }
-      const { route, method } = actions.getList;
+      const { route, method, prepare } = actions.getList;
       dispatch({ type: actionTypes.getList, ...getParentObj(params, parent) });
       try {
-        const response = await axios[method](route, { params });
+        const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.setList,
           payload: response.data,
@@ -319,14 +385,14 @@ export default (camelCaseName, config) => {
       type: actionTypes.clearList,
       ...getParentObj(obj),
     }),
-    create: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+    create: (obj, { callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'createIsLoading')) {
       //   return;
       // }
-      const { route, method } = actions.create;
+      const { route, method, prepare } = actions.create;
       dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
+        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.set,
           payload: response.data,
@@ -339,14 +405,14 @@ export default (camelCaseName, config) => {
         callIfFunc(onCallerError, error);
       };
     },
-    update: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+    update: (obj, { callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'updateIsLoading')) {
       //   return;
       // }
-      const { route, method } = actions.update;
+      const { route, method, prepare } = actions.update;
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
+        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.update,
           payload: response.data,
@@ -359,14 +425,14 @@ export default (camelCaseName, config) => {
         callIfFunc(onCallerError, error);
       };
     },
-    delete: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+    delete: (obj, { callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'deleteIsLoading')) {
       //   return;
       // }
-      const { route, method } = actions.delete;
+      const { route, method, prepare } = actions.delete;
       dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios[method](typeof route === 'function' ? route(obj) : route, obj, { params });
+        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.delete,
           payload: obj,
@@ -379,14 +445,14 @@ export default (camelCaseName, config) => {
         callIfFunc(onCallerError, error);
       };
     },
-    getAll : ({ callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+    getAll : ({ callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'getAllIsLoading')) {
       //   return;
       // }
-      const { route, method } = actions.getAll;
+      const { route, method, prepare } = actions.getAll;
       dispatch({ type: actionTypes.getAllIsLoading });
       try {
-        const response = await axios[method](route, { params });
+        const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.setAll,
           payload: response.data,
@@ -425,16 +491,16 @@ export default (camelCaseName, config) => {
 
   const actionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
-    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError }]) =>
+    .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError, axiosConfig }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback, onError: onCallerError, ...restArgs } = {}) =>
+        [action]: (obj, { params = {}, callback, onError: onCallerError, args } = {}) =>
           async (dispatch, getState) => {
             const parentObj = !customParent
                 ? getParentObj(obj, parent)
                 : { 
                     parent: typeof customParent === 'function'
-                      ? customParent(obj, { ...restArgs, getState, params })
+                      ? customParent(obj, { args, getState, params })
                       : customParent
                   };
             
@@ -444,13 +510,10 @@ export default (camelCaseName, config) => {
             dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {
-              const response = await axios[method](
-                typeof route === 'function' ? route(obj, { ...restArgs, getState, params }) : route,
-                typeof prepare === 'function' ? prepare(obj, { ...restArgs, getState, params }) : obj,
-              );
+              const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
               dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...parentObj });
 
-              onResponse(response.data, { ...actionDispatchers(dispatch) }, { ...restArgs, dispatch, getState, params });
+              onResponse(response.data, { ...actionDispatchers(dispatch) }, { args, dispatch, getState, params });
               callIfFunc(callback, response.data);
             } catch (error) {
               dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });
@@ -464,126 +527,26 @@ export default (camelCaseName, config) => {
       {}
     );
   
+  const actionsList = [
+      ...actions.get ? ['get', 'set'] : [],
+      ...actions.getList ? ['getList', 'setList', 'clearList'] : [],
+      ...actions.create ? ['create', 'set'] : [],
+      ...actions.update ? ['update'] : [],
+      ...actions.delete ? ['delete'] : [],
+      ...parent && actions.getAll ? ['getAll', 'setAll', 'clearAll'] : [],
+      ...actions.select === 'single' ? ['select', 'unSelect'] : [],
+      ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
+  ];
+
   return {
     actionsStripped: {
-      // Get single, update if exists
-      ...actions.get
-        ?
-          {
-            get: actionFunctions.get,
-            set: actionFunctions.set,
-          }
-        : {},
-      ...actions.getList
-        ?
-          {
-            getList: actionFunctions.getList,
-            setList: actionFunctions.setList,
-            clearList: actionFunctions.clearList,
-          }
-        : {},
-      ...actions.create
-        ?
-          {
-            create: actionFunctions.create,
-            set: actionFunctions.set,
-          }
-        : {},
-      ...actions.update
-        ?
-          {
-            update: actionFunctions.update,
-          }
-        : {},
-      ...actions.delete
-        ?
-          {
-            delete: actionFunctions.delete,
-          }
-        : {},
-      ...parent && actions.getList
-        ?
-          {
-            getAll: actionFunctions.getAll,
-            setAll: actionFunctions.setAll,
-            clearAll: actionFunctions.clearAll,
-          }
-        : {},
-      ...actions.select === 'single'
-        ?
-          {
-            select: actionFunctions.select,
-            unSelect: actionFunctions.unSelect,
-          }
-        : {},
-      ...actions.select === 'multiple'
-        ?
-          {
-            selectAll: actionFunctions.selectAll,
-            unSelectAll: actionFunctions.unSelectAll,
-          }
-        : {},
+      ...actionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
       ...actionsIncluded,
     },
     actions: {
-      // Get single, update if exists
-      ...actions.get
-        ?
-          {
-            [`get${functionSingle}`]: actionFunctions.get,
-            [`set${functionSingle}`]: actionFunctions.set,
-          }
-        : {},
-      ...actions.getList
-        ?
-          {
-            [`get${functionPlural}List`]: actionFunctions.getList,
-            [`set${functionPlural}List`]: actionFunctions.setList,
-            [`clear${functionPlural}List`]: actionFunctions.clearList,
-          }
-        : {},
-      ...actions.create
-        ?
-          {
-            [`create${functionSingle}`]: actionFunctions.create,
-            [`set${functionSingle}`]: actionFunctions.set,
-          }
-        : {},
-      ...actions.update
-        ?
-          {
-            [`update${functionSingle}`]: actionFunctions.update,
-          }
-        : {},
-      ...actions.delete
-        ?
-          {
-            [`delete${functionSingle}`]: actionFunctions.delete,
-          }
-        : {},
-      ...parent && actions.getList
-        ?
-          {
-            [`getAll${functionPlural}`]: actionFunctions.getAll,
-            [`setAll${functionPlural}`]: actionFunctions.setAll,
-            [`clearAll${functionPlural}`]: actionFunctions.clearAll,
-          }
-        : {},
-      ...actions.select === 'single'
-        ?
-          {
-            [`select${functionSingle}`]: actionFunctions.select,
-            [`unSelect${functionSingle}`]: actionFunctions.unSelect,
-          }
-        : {},
-      ...actions.select === 'multiple'
-        ?
-          {
-            [`selectAll${functionPlural}`]: actionFunctions.selectAll,
-            [`unSelectAll${functionPlural}`]: actionFunctions.unSelectAll,
-          }
-        : {},
+      ...actionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
       ...actionsIncluded,
     },
+    actionDispatchers,
   };
 };
