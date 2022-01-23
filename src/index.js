@@ -12,20 +12,30 @@ const defaultActions = {
   select: 'single',
 };
 
-const validateConfig = ({
-  id = 'id',
-  byKey = null,
-  includeProps = null,
-  parent = null,
-  parentId = 'id',
-  recursive = false,
-  route = null,
-  actions = defaultActions,
-  includeActions = {},
-  axios = null,
-  onError = null,
-  actionTypeStyle = null,
-}) => {
+const validateConfig = (config, defaultConfig) => {
+  const {
+    id = defaultConfig.id || 'id',
+    byKey = null,
+    includeProps = null,
+    parent = null,
+    parentId = 'id',
+    recursive = false,
+    route = null,
+    includeActions = {},
+    axios = defaultConfig.axios || null,
+    onError = defaultConfig.onError || null,
+    actionTypeStyle = null,
+  } = config;
+
+  // Merge default actions with actions for this factory
+  const actions =
+    !config.actions && !defaultConfig.actions
+    ? defaultActions
+    : {
+      ...defaultConfig.actions ? defaultConfig.actions : {},
+      ...config.actions ? config.actions : {},
+    };
+
   if (recursive && !parent) {
     throw 'ReduxCrudFactory: The option "recursive" is only valid when "parent" is set.';
   }
@@ -113,10 +123,10 @@ const validateConfig = ({
   return newConfig;
 }
 
-const getFactory = ({ objectName, config: cfg, getAllActionDispatchers }) => {
-  const config = validateConfig(cfg);
+const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers }) => {
+  const config = validateConfig(cfg, defaultConfig);
   // Reuse actionTypes as there is no reason to create them twice
-  const at = actionTypes(objectName, config);;
+  const at = actionTypes(objectName, config);
   return {
     actionTypes: at,
     ...actionsFactory({ objectName, config, getAllActionDispatchers }),
@@ -126,15 +136,36 @@ const getFactory = ({ objectName, config: cfg, getAllActionDispatchers }) => {
   };
 }
 
-export default (fullConfig) => {
+export default ({
+  config: fullConfig,
+  axios,
+  onError,
+  actions,
+  id,
+  connect,
+}) => {
+  // Save all actionDispatchers in this array
   const allActionDispatchers = [];
+  // Function to obtain actionDispatchers after they have all been created to avoid a chicken and egg situation because
+  // the first factory requires the actions of all factories before those actions have been created.
   const getAllActionDispatchers = dispatch =>
     allActionDispatchers.reduce((o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
   
   const fullFactory = {};
   Object.entries(fullConfig)
     .map(([objectName, config]) => {
-      const { actionDispatchers, ...factory } = getFactory({ objectName, config, getAllActionDispatchers });
+      const { actionDispatchers, ...factory } = getFactory({
+        objectName,
+        config,
+        defaultConfig: { 
+          axios,
+          connect,
+          onError,
+          actions,
+          id,
+        },
+        getAllActionDispatchers,
+      });
       Object.entries(factory).map(([property, value]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
