@@ -117,20 +117,41 @@ const getSubReducer = (objectName, config, actionTypes) => {
           createError: null,
         };
       case actionTypes.update:
-        console.log('--------------------------------------')
         return {
           ...newState,
           list: {
-            ...id === byKey
+            ...action.payload[id] === action.id && action.payload[byKey] === action.key
               ? newState.list
               // When id !== byKey it is possible to change the key. Therefore we need the id to be able to remove the
               // original object
-              : Object.fromEntries(Object.entries(newState.list).filter(([key, obj]) => obj[id] !== action.payload.id)),
+              : Object.fromEntries(Object.entries(newState.list).filter(([key, obj]) => obj[id] !== action.id && obj[byKey] !== action.key)),
             [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload },
           },
           updateIsLoading: false,
           updateError: null,
         };
+        // case actionTypes.update:
+        //   return {
+        //     ...newState,
+        //     list: {
+        //       ...newState.list,
+        //       [action.payload[byKey]]: action.payload,
+        //     },
+        //     updateIsLoading: false,
+        //     updateError: null,
+        //   };
+        case actionTypes.updateIsLoading:
+          return {
+            ...newState,
+            updateIsLoading: action.payload === false ? false : true,
+            updateError: null,
+          };
+        case actionTypes.updateError:
+          return {
+            ...newState,
+            updateIsLoading: false,
+            updateError: action.payload || null,
+          };
       case actionTypes.createIsLoading:
         return {
           ...newState,
@@ -170,28 +191,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...newState,
           deleteIsLoading: false,
           deleteError: action.payload || null,
-        };
-      case actionTypes.update:
-        return {
-          ...newState,
-          list: {
-            ...newState.list,
-            [action.payload[byKey]]: action.payload,
-          },
-          updateIsLoading: false,
-          updateError: null,
-        };
-      case actionTypes.updateIsLoading:
-        return {
-          ...newState,
-          updateIsLoading: action.payload === false ? false : true,
-          updateError: null,
-        };
-      case actionTypes.updateError:
-        return {
-          ...newState,
-          updateIsLoading: false,
-          updateError: action.payload || null,
         };
       case actionTypes.select:
         return {

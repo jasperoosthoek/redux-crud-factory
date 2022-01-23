@@ -182,5 +182,21 @@ export default ({
       allActionDispatchers.push(actionDispatchers);
       return [objectName, factory]
     });
+  
+  fullFactory.connect = (connect, mapStateToProps, mapDispatchToProps, mergeProps, options) => component => {
+      console.log({ mapStateToProps, mapDispatchToProps, mergeProps, options })
+      // console.log({ factoryNames, mapStateToProps, mapDispatchToProps, mergeProps, options })
+      return connect(
+        mapStateToProps,
+        // (state, ownProps) => ({
+        //   ...mapStateToProps ? mapStateToProps(state, ownProps) : {},
+        // }),
+        mapDispatchToProps,
+        // {
+        //   ...mapDispatchToProps ? mapDispatchToProps : {},
+        // },
+      mergeProps,
+      options
+    )(component)}
   return fullFactory;
 }

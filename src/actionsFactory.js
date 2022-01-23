@@ -296,13 +296,13 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions
-  const _axios = ({ method, route, params, obj, axiosConfig={}, args, getState, prepare }) => axios({
+  const _axios = ({ method, route, params, obj, original, axiosConfig={}, args, getState, prepare }) => axios({
     ...axiosConfig,
     method,
-    url: typeof route === 'function' ? route(obj, { args, getState, params }) : route, 
+    url: typeof route === 'function' ? route(original ? original : obj, { args, getState, params }) : route, 
     params,
     ...obj
-      ? { data: typeof prepare === 'function' ? prepare(obj, { args, getState, params }) : obj }
+      ? { data: typeof prepare === 'function' ? prepare(obj, args, { getState, params }) : obj }
       : {},
   });
 
@@ -418,7 +418,7 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
         callIfFunc(onCallerError, error);
       };
     },
-    update: (obj, { original={}, callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
+    update: (obj, { original, callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'updateIsLoading')) {
       //   return;
       // }
@@ -426,10 +426,10 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
       
       dispatch({
         type: actionTypes.updateIsLoading,
-        ...getParentObj(obj, parent),
+        ...getParentObj(original ? original : obj, parent),
       });
       try {
-        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+        const response = await _axios({ method, route, params, obj, original, axiosConfig, getState, args, prepare });
         if (parent && original[parent] !== response.data[parent]) {
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
@@ -444,8 +444,8 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
           payload: response.data,
           ...getParentObj(obj, parent),
           // Send unmutable id to be able to remove the object if byKey has changed
-          key: original[byKey] || null,
-          id: original[id] || null,
+          key: typeof original === 'object' ? original[byKey] || null : null,
+          id: typeof original === 'object' ? original[id] || null : null,
         });
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
