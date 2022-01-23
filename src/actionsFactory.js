@@ -203,7 +203,7 @@ export const getDetailRoute = (route, id) => obj =>
     route.endsWith('/') ? '/' : ''
   }`;
 
-export default (camelCaseName, config) => {
+export default ({ camelCaseName, config, getAllActionDispatchers }) => {
   const {
     route,
     axios,
@@ -254,18 +254,21 @@ export default (camelCaseName, config) => {
         obj => dispatch({
           type: actionTypes[action],
           payload: obj,
-          ...getParentObj(obj),
+          ...action.endsWith('All') ? {} : getParentObj(obj),
         }),
       ])),
     ...Object.fromEntries(
-      Object.keys(actionTypes).map(action => [
-        mapActions[action],
-        obj => dispatch({
-          type: actionTypes[action],
-          payload: obj,
-          ...getParentObj(obj),
-        }),
-      ])),
+      Object.keys(actionTypes)
+        .filter(action => !!mapActions[action])
+        .map(action => [
+          mapActions[action],
+          obj => dispatch({
+            type: actionTypes[action],
+            payload: obj,
+            ...action.endsWith('All') ? {} : getParentObj(obj),
+          }),
+        ])
+      ),
     });
   
   const getFromState = (getState, key) => {
@@ -513,7 +516,13 @@ export default (camelCaseName, config) => {
               const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
               dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...parentObj });
 
-              onResponse(response.data, { ...actionDispatchers(dispatch) }, { args, dispatch, getState, params });
+              onResponse(
+                response.data,
+                { 
+                  ...getAllActionDispatchers(dispatch),
+                  ...actionDispatchers(dispatch),
+                },
+                { args, dispatch, getState, params });
               callIfFunc(callback, response.data);
             } catch (error) {
               dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });

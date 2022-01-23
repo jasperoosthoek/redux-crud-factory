@@ -27,7 +27,7 @@ const validateConfig = ({
   actionTypeStyle = null,
 }) => {
   if (recursive && !parent) {
-    console.error('The option "recursive" is only valid when "parent" is set.')
+    throw 'ReduxCrudFactory: The option "recursive" is only valid when "parent" is set.';
   }
   
   const detailRoute = getDetailRoute(route, id);
@@ -113,16 +113,38 @@ const validateConfig = ({
   return newConfig;
 }
 
-export default (camelCaseName, cfg) => {
+const getFactory = ({ camelCaseName, config: cfg, getAllActionDispatchers }) => {
   const config = validateConfig(cfg);
   // Reuse actionTypes as there is no reason to create them twice
   const at = actionTypes(camelCaseName, config);;
   return {
     actionTypes: at,
-    ...actionsFactory(camelCaseName, config),
-    ...reducerFactory(camelCaseName, config, at),
+    ...actionsFactory({ camelCaseName, config, getAllActionDispatchers }),
+    reducers: reducerFactory(camelCaseName, config, at),
     // Export either mapStateToProps when parent is falsy or mapStateAndOwnPropsToProps when parent is a string
     ...getMapToProps(camelCaseName, config),
     config,
   };
+}
+
+export default (fullConfig) => {
+  const allActionDispatchers = [];
+  const getAllActionDispatchers = dispatch =>
+    allActionDispatchers.reduce((o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
+  
+  const fullFactory = {};
+  Object.entries(fullConfig)
+    .map(([camelCaseName, config]) => {
+      const factory = getFactory({ camelCaseName, config, getAllActionDispatchers });
+      Object.entries(factory).map(([property, value]) => {
+        fullFactory[property] = {
+          ...fullFactory[property] ? fullFactory[property] : {},
+          [camelCaseName]: value,
+        }
+      })
+
+      allActionDispatchers.push(factory.actionDispatchers);
+      return [camelCaseName, factory]
+    });
+  return fullFactory;
 }

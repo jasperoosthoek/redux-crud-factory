@@ -301,10 +301,8 @@ export default (camelCaseName, config = {}, actionTypes) => {
     };
     return newState;
   };
-  return {
-    reducer,
-    reducerAsObject: { [camelCaseName]: reducer },
-  }
+  
+  return reducer;
 };
 
 
