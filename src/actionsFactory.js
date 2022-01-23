@@ -47,15 +47,15 @@ const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
     [`${func}ClearError`]: `${action}_${CLEAR_ERROR}`,
   };
 }
-const formatActionNames = camelCaseName => {
-  const actionPlural = camelToSnakeCase(camelCaseName).toUpperCase();
+const formatActionNames = objectName => {
+  const actionPlural = camelToSnakeCase(objectName).toUpperCase();
   return {
     actionPlural,
     actionSingle: pluralToSingle(actionPlural),
   };
 }
 
-const formatActionTypes = (camelCaseName, config) => {
+const formatActionTypes = (objectName, config) => {
   const {
     actionTypeStyle,
     select,
@@ -63,7 +63,7 @@ const formatActionTypes = (camelCaseName, config) => {
     actions,
     includeActions,
   } = config;
-  const { actionSingle, actionPlural } = formatActionNames(camelCaseName);
+  const { actionSingle, actionPlural } = formatActionNames(objectName);
   if (typeof actionTypeStyle == 'function') {
     return {
       ...actions.get
@@ -179,13 +179,13 @@ const formatActionTypes = (camelCaseName, config) => {
 
 export const actionTypes = formatActionTypes;
 
-export const formatFunctionNames = (camelCaseName) => {
+export const formatFunctionNames = (objectName) => {
   // Turn "upperCamelCaseName" into UpperCamelCaseName
-  const upperCamelCaseName = camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
+  const upperCamelCaseName = objectName.charAt(0).toUpperCase() + objectName.slice(1);
   return {
     functionSingle: pluralToSingle(upperCamelCaseName),
     functionPlural: upperCamelCaseName,
-    camelCaseNameSingle: pluralToSingle(camelCaseName),
+    camelCaseNameSingle: pluralToSingle(objectName),
   };
 };
 
@@ -203,7 +203,7 @@ export const getDetailRoute = (route, id) => obj =>
     route.endsWith('/') ? '/' : ''
   }`;
 
-export default ({ camelCaseName, config, getAllActionDispatchers }) => {
+export default ({ objectName, config, getAllActionDispatchers }) => {
   const {
     route,
     axios,
@@ -215,9 +215,9 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
     actions,
     includeActions,
   } = config;
-  const { functionSingle, functionPlural } = formatFunctionNames(camelCaseName);
-  const { actionSingle, actionPlural } = formatActionNames(camelCaseName);
-  const actionTypes = formatActionTypes(camelCaseName, config);
+  const { functionSingle, functionPlural } = formatFunctionNames(objectName);
+  const { actionSingle, actionPlural } = formatActionNames(objectName);
+  const actionTypes = formatActionTypes(objectName, config);
 
   
   const getParentObj = (obj) => {
@@ -281,15 +281,15 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
   });
   
   const getFromState = (getState, key) => {
-    const state = getState()[camelCaseName];
+    const state = getState()[objectName];
     if (typeof state === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${camelCaseName}" key" Initial state should include { ${camelCaseName}: { ... } } object.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" key" Initial state should include { ${objectName}: { ... } } object.`;
     }
     if (typeof state !== 'object') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${camelCaseName}" key should have an object as value: { ${camelCaseName}: { ... } }.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" key should have an object as value: { ${objectName}: { ... } }.`;
     }
     if (typeof state[key] === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${camelCaseName}: { ${key}: ... } }`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${objectName}: { ${key}: ... } }`;
     }
     return state[key];
   }

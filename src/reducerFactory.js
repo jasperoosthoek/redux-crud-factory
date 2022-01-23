@@ -37,7 +37,7 @@ const getInitialState = ({
   }), {})
 });
 
-const getSubReducer = (camelCaseName, config, actionTypes) => {
+const getSubReducer = (objectName, config, actionTypes) => {
   const {
     id,
     byKey,
@@ -208,7 +208,7 @@ const getSubReducer = (camelCaseName, config, actionTypes) => {
   }
 }
 
-export default (camelCaseName, config = {}, actionTypes) => {
+export default (objectName, config = {}, actionTypes) => {
   const {
     id,
     byKey,
@@ -218,7 +218,7 @@ export default (camelCaseName, config = {}, actionTypes) => {
     selectedId,
   } = config;
 
-  const subReducer = getSubReducer(camelCaseName, config, actionTypes)
+  const subReducer = getSubReducer(objectName, config, actionTypes)
   const reducer = (state, action) => {
     if (!parent) {
       let subState = subReducer(state, action);
@@ -301,7 +301,7 @@ export default (camelCaseName, config = {}, actionTypes) => {
     };
     return newState;
   };
-  
+
   return reducer;
 };
 

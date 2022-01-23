@@ -113,16 +113,15 @@ const validateConfig = ({
   return newConfig;
 }
 
-const getFactory = ({ camelCaseName, config: cfg, getAllActionDispatchers }) => {
+const getFactory = ({ objectName, config: cfg, getAllActionDispatchers }) => {
   const config = validateConfig(cfg);
   // Reuse actionTypes as there is no reason to create them twice
-  const at = actionTypes(camelCaseName, config);;
+  const at = actionTypes(objectName, config);;
   return {
     actionTypes: at,
-    ...actionsFactory({ camelCaseName, config, getAllActionDispatchers }),
-    reducers: reducerFactory(camelCaseName, config, at),
-    // Export either mapStateToProps when parent is falsy or mapStateAndOwnPropsToProps when parent is a string
-    ...getMapToProps(camelCaseName, config),
+    ...actionsFactory({ objectName, config, getAllActionDispatchers }),
+    reducers: reducerFactory(objectName, config, at),
+    ...getMapToProps(objectName, config),
     config,
   };
 }
@@ -134,17 +133,17 @@ export default (fullConfig) => {
   
   const fullFactory = {};
   Object.entries(fullConfig)
-    .map(([camelCaseName, config]) => {
-      const { actionDispatchers, ...factory } = getFactory({ camelCaseName, config, getAllActionDispatchers });
+    .map(([objectName, config]) => {
+      const { actionDispatchers, ...factory } = getFactory({ objectName, config, getAllActionDispatchers });
       Object.entries(factory).map(([property, value]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
-          [camelCaseName]: value,
+          [objectName]: value,
         }
       })
 
       allActionDispatchers.push(actionDispatchers);
-      return [camelCaseName, factory]
+      return [objectName, factory]
     });
   return fullFactory;
 }

@@ -1,7 +1,7 @@
 import { formatFunctionNames } from './actionsFactory';
 import { toUpperCamelCase, arrayToObject } from './utils';
 
-export const getMapToProps = (camelCaseName, config) => {
+export const getMapToProps = (objectName, config) => {
   const {
     id,
     byKey,
@@ -13,7 +13,7 @@ export const getMapToProps = (camelCaseName, config) => {
     actions,
     includeActions,
   } = config;
-  const { functionSingle, functionPlural, camelCaseNameSingle } = formatFunctionNames(camelCaseName);
+  const { functionSingle, functionPlural, camelCaseNameSingle } = formatFunctionNames(objectName);
   const camelCaseId = toUpperCamelCase(byKey);
   
   const propsIncluded = (state) => ({
@@ -124,7 +124,7 @@ export const getMapToProps = (camelCaseName, config) => {
       ?
         // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
         {
-          [`${camelCaseName}List`]: state.list || {},
+          [`${objectName}List`]: state.list || {},
           [`get${functionPlural}ListIsLoading`]: state.getListIsLoading,
           [`get${functionPlural}ListError`]: state.getListError,
         }
@@ -143,8 +143,8 @@ export const getMapToProps = (camelCaseName, config) => {
   if (!parent) {
     // This is the default mapper
     return {
-      mapToPropsStripped: (state, ownProps) => mapToPropsStripped(state[camelCaseName], ownProps),
-      mapToProps: (state, ownProps) => mapToProps(state[camelCaseName], ownProps),
+      mapToPropsStripped: (state, ownProps) => mapToPropsStripped(state[objectName], ownProps),
+      mapToProps: (state, ownProps) => mapToProps(state[objectName], ownProps),
     };
   }
   return {
@@ -160,15 +160,15 @@ export const getMapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  state[camelCaseName].list[parentKey]
-                    ? mapToPropsStripped(state[camelCaseName].list[parentKey], ownProps)
+                  state[objectName].list[parentKey]
+                    ? mapToPropsStripped(state[objectName].list[parentKey], ownProps)
                     : {}
                 :
                   {
                     // Return embedded list by [parent][key]
                     [`list`]: 
                       Object.fromEntries(
-                        Object.entries(state[camelCaseName].list).map(
+                        Object.entries(state[objectName].list).map(
                           ([parentKey, { list }]) => [parentKey, list]
                         )
                       ),
@@ -176,8 +176,8 @@ export const getMapToProps = (camelCaseName, config) => {
               ...parent && actions.getList
                 ?
                   {
-                    getAllIsLoading: state[camelCaseName].getAllIsLoading,
-                    getAllError: state[camelCaseName].getAllError,
+                    getAllIsLoading: state[objectName].getAllIsLoading,
+                    getAllError: state[objectName].getAllError,
                   }
                 : {},
             }
@@ -194,15 +194,15 @@ export const getMapToProps = (camelCaseName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  state[camelCaseName].list[parentKey]
-                    ? mapToProps(state[camelCaseName].list[parentKey], ownProps)
+                  state[objectName].list[parentKey]
+                    ? mapToProps(state[objectName].list[parentKey], ownProps)
                     : {}
                 :
                   {
                     // Return embedded list by [parent][key]
-                    [`${camelCaseName}List`]: 
+                    [`${objectName}List`]: 
                       Object.fromEntries(
-                        Object.entries(state[camelCaseName].list).map(
+                        Object.entries(state[objectName].list).map(
                           ([parentKey, { list }]) => [parentKey, list]
                         )
                       ),
@@ -210,8 +210,8 @@ export const getMapToProps = (camelCaseName, config) => {
               ...parent && actions.getList
                 ?
                   {
-                    [`getAll${functionPlural}IsLoading`]: state[camelCaseName].getAllIsLoading,
-                    [`getAll${functionPlural}Error`]: state[camelCaseName].getAllError,
+                    [`getAll${functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
+                    [`getAll${functionPlural}Error`]: state[objectName].getAllError,
                   }
                 : {},
             }
