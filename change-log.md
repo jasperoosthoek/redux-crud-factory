@@ -18,3 +18,5 @@
 ##### Version 0.1.1
 - **Breaking change**: Call with reduxCrudFactory({ config: ... }) instead of reduxCrudFactory( ... ) to allow for more fields
 - Add default config fields: reduxCrudFactory({ config, axios, id, onError, actions, connect }) that are merged with factory config
+- Correctly handle update action when object key (byKey !== id) changes or when parent key changes.
+- Fix not mapping objects to props when id !== byKey

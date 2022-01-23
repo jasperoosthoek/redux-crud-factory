@@ -39,8 +39,8 @@ export const getMapToProps = (objectName, config) => {
   // If the id is given to a component as a prop, this function will fetch the object from
   // the state or give null when the object is not found
   const singleObjectByIdProp = (state, ownProps) => ({
-    ...(typeof ownProps[id] !== 'undefined')
-      ? { [camelCaseNameSingle]: state.list[ownProps[id]] || null } 
+    ...(typeof ownProps[byKey] !== 'undefined')
+      ? { [camelCaseNameSingle]: state.list[ownProps[byKey]] || null } 
       : {}
   })
   
