@@ -227,12 +227,40 @@ export default (camelCaseName, config) => {
         }),
       ]))
     });
+  
+  const getFromState = (getState, key) => {
+    const state = getState()[camelCaseName];
+    if (typeof state === 'undefined') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${camelCaseName}" key" Initial state should include { ${camelCaseName}: { ... } } object.`;
+    }
+    if (typeof state !== 'object') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${camelCaseName}" key should have an object as value: { ${camelCaseName}: { ... } }.`;
+    }
+    if (typeof state[key] === 'undefined') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${camelCaseName}: { ${key}: ... } }`;
+    }
+    return state[key];
+  }
+
+  const getDetailRoute = obj =>
+    `${
+      route
+    }${
+      route.endsWith('/') ? '' : '/'
+    }${
+      typeof obj === 'object' ? obj[id] : obj
+    }${
+      route.endsWith('/') ? '/' : ''
+    }`
 
   const actionFunctions = {
-    get: (id, { params = {}, callback, onError: onCallerError } = {}) => async dispatch => {
+    get: (id, { params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
+      if (getFromState(getState, 'getIsLoading')) {
+        return;
+      }
       dispatch({ type: actionTypes.getIsLoading });
       try {
-        const response = await axios.get(`${route}${id}/`, { params });
+        const response = await axios.get(getDetailRoute(id), { params });
           dispatch({
             type: actionTypes.set,
             payload: response.data,
@@ -246,8 +274,7 @@ export default (camelCaseName, config) => {
       };
     },
     getList: ({ params = {}, callback, onError: onCallerError } = {}) => async (dispatch, getState) => {
-      const { getListIsLoading } = getState()[camelCaseName];
-      if (getListIsLoading) {
+      if (getFromState(getState, 'getListIsLoading')) {
         return;
       }
       dispatch({ type: actionTypes.getList, ...getParentObj(params, parent) });
@@ -287,7 +314,10 @@ export default (camelCaseName, config) => {
       type: actionTypes.clearList,
       ...getParentObj(obj),
     }),
-    create: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
+    create: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+      if (getFromState(getState, 'createIsLoading')) {
+        return;
+      }
       dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
       try {
         const response = await axios.post(route, obj, { params });
@@ -303,10 +333,13 @@ export default (camelCaseName, config) => {
         callIfFunc(onCallerError, error);
       };
     },
-    update: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
+    update: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+      if (getFromState(getState, 'updateIsLoading')) {
+        return;
+      }
       dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.patch(`${route}${obj[id]}/`, obj, { params });
+        const response = await axios.patch(getDetailRoute(obj), obj, { params });
         dispatch({
           type: actionTypes.update,
           payload: response.data,
@@ -319,10 +352,13 @@ export default (camelCaseName, config) => {
         callIfFunc(onCallerError, error);
       };
     },
-    delete: (obj, { callback, onError: onCallerError, params } = {}) => async dispatch => {
+    delete: (obj, { callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
+      if (getFromState(getState, 'deleteIsLoading')) {
+        return;
+      }
       dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
       try {
-        const response = await axios.delete(`${route}${obj[id]}/`, obj, { params });
+        const response = await axios.delete(getDetailRoute(obj), obj, { params });
         dispatch({
           type: actionTypes.delete,
           payload: obj,
@@ -336,8 +372,7 @@ export default (camelCaseName, config) => {
       };
     },
     getAll : ({ callback, onError: onCallerError, params } = {}) => async (dispatch, getState) => {
-      const { getAllIsLoading } = getState()[camelCaseName];
-      if (getAllIsLoading) {
+      if (getFromState(getState, 'getAllIsLoading')) {
         return;
       }
       dispatch({ type: actionTypes.getAllIsLoading });
@@ -393,6 +428,9 @@ export default (camelCaseName, config) => {
                       ? customParent(obj, { ...restArgs, getState, params })
                       : customParent
                   };
+            if (getFromState(getState, `${action}IsLoading`)) {
+              return;
+            }
             dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {
