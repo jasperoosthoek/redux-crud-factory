@@ -12,29 +12,43 @@ Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](ht
 import reduxCrudFactory from 'redux-crud-factory';
 import axios from 'axios';
 
-// Our object name must be camelCase
-const objectName = 'farmAnimals';
-const config = {
-    route: 'https://example.com/api/farm-animals/', // Non-existing route!
-    axios,
+// Our object name 'farmAnimals' must be camelCase
+export const factory = reduxCrudFactory({ config: {
+    axios,                                              // Default axios instance
     actions: {
+        get: true,
         getList: true,
         create: true,
         update: true,
         delete: true,
     },
-};
+    farmAnimals: {
+        route: 'https://example.com/api/farm-animals/', // Non-existing route!
+    },
+    plantsAndVegetables: {
+        route: 'https://example.com/api/plants-and-vegetables/',
+        actions: { delete: false },                     // Add or disable actions if you like to don't repeat yourself
+        axios: otherAxios,                              // Maybe this route needs authentication
+    },
+}});
 
-export const farmAnimalsFactory = reduxCrudFactory(
-    objectName,
-    config
-);
+```
+Show what we got in the console
+```
+> console.log(factory)
 
-// Show what we got in the console
-console.log(farmAnimalsFactory);
+{
+  actionTypes: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  actions: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  actionsStripped: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  mapToProps: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  mapToPropsStripped: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  reducers: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  config: {farmAnimals: {…}, plantsAndVegetables: {…}},
+}
 ```
 
-### The object `farmAnimalsFactory` contains the following components
+### The object `factory` contains the following components
 
 ##### `actionTypes`:
 > All the Redux action types, for instance `{ getList: 'GET_FARM_ANIMALS_LIST', create: 'CREATE_FARM_ANIMAL', ... }`. Note that name `farmAnimals` is used to create human readable Redux action types. Single/plural is automatically handled including words like category/categories.
@@ -42,16 +56,14 @@ console.log(farmAnimalsFactory);
 > All available functions that can trigger Redux actions with formatted names: `{ getFarmAnimalsList: ƒ, createFarmAnimal: ƒ, updateFarmAnimal: ƒ, ... }`.
 ##### `actionsStripped`: 
 > Same as `actions` above but with stripped down names: `{ getList: ƒ, create: ƒ, update: ƒ, ... }`.
-##### `mapStateToProps`: 
-> The function that gets data from the store into our React component: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
-##### `mapStateToPropsStripped`: 
+##### `mapToProps`: 
+> The functions that gets data from the store into our React component: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
+##### `mapToPropsStripped`: 
 >  Same as `mapStateToProps` however with stripped down names: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
-##### `reducer`: 
-> The Redux reducer function that will handle state management
-##### `reducerAsObject`: 
->  The same Redux reducer function supplied as `{ farmAnimals: ƒ }`. This object can be easily used with `combineReducers()` from Redux (see example below) and leads to a *single source of truth* for the object name.
+##### `reducers`: 
+> The Redux reducer function that will handle state managementfarmAnimals: ƒ }`. This object can be easily used with `combineReducers` from Redux (see example below) and leads to a *single source of truth* for the object name: `combineReducers({ ...factory.reducers, other: otherReducer })`
 ##### `config`: 
-> The same `config` object as supplied however it contained all available options.
+> The same `config` object as supplied however expanded with all the available options.
 
 ### Connect to the redux store
 ```javascript
@@ -68,10 +80,7 @@ const consoleLogReducer = (state = null, { type, ...action }) => {
 
 const rootReducer = (state, action) => consoleLogReducer(
     combineReducers({
-        ...farmAnimalsFactory.reducerAsObject,
-        // The above is identical to:
-        // farmAnimals: farmAnimalsFactory.reducer,
-
+        ...factory.reducers
         // Add more reducers here...
     })(state, action),
     action
@@ -130,13 +139,13 @@ In the simple example above the specification for a complete `CRUD` are created.
                 name: 'Billy',
             },
         },
-        createHasErrored: false,
+        createError: null,
         createIsLoading: false,
-        deleteHasErrored: false,
+        deleteError: null,
         deleteIsLoading: false,
-        getListHasErrored: false,
+        getListError: null,
         getListIsLoading: false,
-        updateHasErrored: false,
+        updateError: null,
         updateIsLoading: false
     },
 }
@@ -173,8 +182,8 @@ class FarmAnimalsList extends Component {
 };
 
 export default connect(
-    farmAnimalsFactory.mapStateToProps,
-    farmAnimalsFactory.actions
+    factory.mapToProps.farmAnimals,
+    factory.actions.farmAnimals
 )(FarmAnimalsList);
 ```
 and
