@@ -246,34 +246,38 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
     unSelectAll: `unSelectAll${functionPlural}`,
   }
 
-  // This function is able to supply the include props function with all actions.
-  const actionDispatchers = (dispatch) => ({
-    ...Object.fromEntries(
-      Object.keys(actionTypes).map(action => [
-        action,
+  // This function is able to supply callbacks with all actions.
+  const actionDispatchersStripped = dispatch => Object.fromEntries(
+    Object.keys(actionTypes).map(action => [
+      action,
+      obj => dispatch({
+        type: actionTypes[action],
+        payload: obj,
+        ...action.endsWith('All') ? {} : getParentObj(obj),
+      }),
+    ])
+  );
+  // actionDispatchers is created and returned to caller. There, actionDispatchers of all factories are 
+  // combined and can be obtained using getAllActionDispatchers(dispatch)
+  const actionDispatchers = dispatch => Object.fromEntries(
+    Object.keys(actionTypes)
+      .filter(action => !!mapActions[action])
+      .map(action => [
+        mapActions[action],
         obj => dispatch({
           type: actionTypes[action],
           payload: obj,
           ...action.endsWith('All') ? {} : getParentObj(obj),
         }),
-      ])),
-    ...Object.fromEntries(
-      Object.keys(actionTypes)
-        .filter(action => !!mapActions[action])
-        .map(action => [
-          mapActions[action],
-          obj => dispatch({
-            type: actionTypes[action],
-            payload: obj,
-            ...action.endsWith('All') ? {} : getParentObj(obj),
-          }),
-        ])
-      ),
-    });
+      ])
+  );
   
+  // Each callback or onResponse function will get the actions of all factories (getFooList(), createBar() etc) and also 
+  // the stripped actions (setList(), create() etc) of this particular factory. This allows callbacks to trigger specific actions (createFoo()) and
+  // also create reusable callbacks for different factories that use the stripped action (create())
   const combineActionDispatchers = dispatch => ({
     ...getAllActionDispatchers(dispatch),
-    ...actionDispatchers(dispatch),
+    ...actionDispatchersStripped(dispatch),
   });
   
   const getFromState = (getState, key) => {
@@ -290,7 +294,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
     return state[key];
   }
 
-  // Generic call to Axios which handles 
+  // Generic call to Axios which handles multiple methods and route & prepare functions
   const _axios = ({ method, route, params, obj, axiosConfig={}, args, getState, prepare }) => axios({
     ...axiosConfig,
     method,

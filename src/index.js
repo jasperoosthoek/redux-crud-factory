@@ -135,7 +135,7 @@ export default (fullConfig) => {
   const fullFactory = {};
   Object.entries(fullConfig)
     .map(([camelCaseName, config]) => {
-      const factory = getFactory({ camelCaseName, config, getAllActionDispatchers });
+      const { actionDispatchers, ...factory } = getFactory({ camelCaseName, config, getAllActionDispatchers });
       Object.entries(factory).map(([property, value]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
@@ -143,7 +143,7 @@ export default (fullConfig) => {
         }
       })
 
-      allActionDispatchers.push(factory.actionDispatchers);
+      allActionDispatchers.push(actionDispatchers);
       return [camelCaseName, factory]
     });
   return fullFactory;
