@@ -14,11 +14,13 @@ const defaultActions = {
 
 const validateConfig = (config, defaultConfig) => {
   const {
+    // The id to use when perform crud actions
     id = defaultConfig.id || 'id',
-    byKey = null,
+    // The key to sort by in the state
+    byKey = defaultConfig.byKey || null,
     includeProps = null,
     parent = null,
-    parentId = 'id',
+    parentId = defaultConfig.parentId || 'id',
     recursive = false,
     route = null,
     includeActions = {},
@@ -142,6 +144,8 @@ export default ({
   onError,
   actions,
   id,
+  byKey,
+  parentId,
   connect,
 }) => {
   // Save all actionDispatchers in this array
@@ -163,6 +167,8 @@ export default ({
           onError,
           actions,
           id,
+          byKey,
+          parentId,
         },
         getAllActionDispatchers,
       });

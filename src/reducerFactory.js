@@ -117,9 +117,17 @@ const getSubReducer = (objectName, config, actionTypes) => {
           createError: null,
         };
       case actionTypes.update:
+        console.log('--------------------------------------')
         return {
           ...newState,
-          list: { ...newState.list, [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload } },
+          list: {
+            ...id === byKey
+              ? newState.list
+              // When id !== byKey it is possible to change the key. Therefore we need the id to be able to remove the
+              // original object
+              : Object.fromEntries(Object.entries(newState.list).filter(([key, obj]) => obj[id] !== action.payload.id)),
+            [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload },
+          },
           updateIsLoading: false,
           updateError: null,
         };

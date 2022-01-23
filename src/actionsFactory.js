@@ -212,6 +212,7 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
     parentId,
     actionTypeStyle,
     id,
+    byKey,
     actions,
     includeActions,
   } = config;
@@ -417,22 +418,32 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
         callIfFunc(onCallerError, error);
       };
     },
-    update: (obj, { callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
+    update: (obj, { id: objId, callback, onError: onCallerError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
       // if (getFromState(getState, 'updateIsLoading')) {
       //   return;
       // }
       const { route, method, prepare } = actions.update;
-      dispatch({ type: actionTypes.updateIsLoading, ...getParentObj(obj, parent) });
+      
+      dispatch({
+        type: actionTypes.updateIsLoading,
+        ...getParentObj(obj, parent),
+      });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
           type: actionTypes.update,
           payload: response.data,
-          ...getParentObj(obj),
+          ...getParentObj(obj, parent),
+          // Send unmutable id to be able to remove the object if byKey has changed
+          id: typeof obj === 'object' ? obj[id] : objId,
         });
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
-        dispatch({ type: actionTypes.updateError, ...getParentObj(obj, parent), payload: error });
+        dispatch({
+          type: actionTypes.updateError,
+          ...getParentObj(obj, parent),
+          payload: error,
+        });
         callIfFunc(onError, error);
         callIfFunc(onCallerError, error);
       };

@@ -9,8 +9,12 @@
 - The `config.actions` object has default { method: ..., route: ..., prepare: ... } for each action.
 - Each action has a configurable route string or function, prepare function and axios method
 - actionDispatchers have stripped (create, getList etc.) as well as full function names (createFoo, getFooList etc.)
-- Breaking change: includeActions only allows extra arguments to be passed in `args` key: `extraAction(obj, { args: { extra: 'argument' }})`.
+- **Breaking change**: includeActions only allows extra arguments to be passed in `args` key: `extraAction(obj, { args: { extra: 'argument' }})`.
 
 ##### Version 0.1.0
-- Breaming change: Multiple configurations are combined to a single configuration
+- **Breaking change**: Multiple configurations are combined to a single configuration
 - Callbacks object with dispatchable action functions of all configurations as second argument
+
+##### Version 0.1.1
+- **Breaking change**: Call with reduxCrudFactory({ config: ... }) instead of reduxCrudFactory( ... ) to allow for more fields
+- Add default config fields: reduxCrudFactory({ config, axios, id, onError, actions, connect }) that are merged with factory config
