@@ -271,6 +271,11 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
       ),
     });
   
+  const combineActionDispatchers = dispatch => ({
+    ...getAllActionDispatchers(dispatch),
+    ...actionDispatchers(dispatch),
+  });
+  
   const getFromState = (getState, key) => {
     const state = getState()[camelCaseName];
     if (typeof state === 'undefined') {
@@ -316,7 +321,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
   //       payload: response.data,
   //       ...getParentObj(response.data),
   //     });
-  //     callIfFunc(callback, response.data);
+  //     callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
   //   } catch (error) {
   //     dispatch({ type: actionTypes.getError, payload: error });
   //     callIfFunc(onError, error);
@@ -339,7 +344,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           payload: response.data,
           ...getParentObj(response.data),
         });
-        callIfFunc(callback, response.data);
+        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({ type: actionTypes.getError, payload: error });
         callIfFunc(onError, error);
@@ -359,7 +364,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           payload: response.data,
           ...getParentObj(params),
         });
-        callIfFunc(callback, response.data);
+        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({
           type: actionTypes.clearList,
@@ -401,7 +406,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           payload: response.data,
           ...getParentObj(response.data),
         });
-        callIfFunc(callback, response.data);
+        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
@@ -421,7 +426,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           payload: response.data,
           ...getParentObj(obj),
         });
-        callIfFunc(callback, response.data);
+        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({ type: actionTypes.updateError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
@@ -441,7 +446,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           payload: obj,
           ...getParentObj(obj),
         });
-        callIfFunc(callback);
+        callIfFunc(callback, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(onError, error);
@@ -460,7 +465,7 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
           type: actionTypes.setAll,
           payload: response.data,
         });
-        callIfFunc(callback, response.data);
+        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
       } catch (error) {
         dispatch({ type: actionTypes.getAllError, payload: error });
         callIfFunc(onError, error);
@@ -518,12 +523,10 @@ export default ({ camelCaseName, config, getAllActionDispatchers }) => {
 
               onResponse(
                 response.data,
-                { 
-                  ...getAllActionDispatchers(dispatch),
-                  ...actionDispatchers(dispatch),
-                },
-                { args, dispatch, getState, params });
-              callIfFunc(callback, response.data);
+                combineActionDispatchers(dispatch),
+                { args, dispatch, getState, params }
+              );
+              callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
             } catch (error) {
               dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });
               callIfFunc(onError, error);

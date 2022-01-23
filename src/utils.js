@@ -36,9 +36,9 @@ export const pluralToSingle = str => {
 }
 
 // Simply call func with params if it is a function, if not ignore
-export const callIfFunc = (func, params) => {
+export const callIfFunc = (func, ...params) => {
   if (typeof func === 'function') {
-    func(params);
+    func(...params);
   }
 }
 
