@@ -66,7 +66,7 @@ export const factory = reduxCrudFactory({
           method: 'post',                               // Any http method required
           
           route: ({ id }) =>                            // route can be string or function called when you call sellPlant(plant, { args: { your stuff.. }, params ))
-            `/api/plants-n-veggies/${id}/sell',         // Request params are handled automatically, args can be used in route, prepare or onResponse
+            `/api/plants/${id}/sell`,                   // Request params are handled automatically, args can be used in route, prepare or onResponse
             
           prepare: (plant, { args, params } =>          // Do something with additional args or params before data is sent to api
             ({ ...plant }), 
@@ -177,19 +177,20 @@ In the simple example above the specification for a complete `CRUD` are created.
 ```
 
 ### Objects in the redux store
+
 ```javascript
 {
     farmAnimals: {
         list: {
             1: {
                 id: 1,
-                type: 'cow',
-                name: 'Bertha',
+                type: 'donkey',
+                name: 'Benjamin',
             },
             2: {
                 id: 2,
                 type: 'goat',
-                name: 'Billy',
+                name: 'Muriel',
             },
         },
         createError: null,
