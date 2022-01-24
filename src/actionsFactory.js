@@ -203,7 +203,7 @@ export const getDetailRoute = (route, id) => obj =>
     route.endsWith('/') ? '/' : ''
   }`;
 
-export default ({ objectName, config, getAllActionDispatchers }) => {
+export default ({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const {
     route,
     axios,
@@ -228,58 +228,6 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
     // Allow parent in object to be an object itself, if so the id is found by parentId
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
-  const mapActions = {
-    get: `get${functionSingle}`,
-    set: `set${functionSingle}`,
-    getList: `get${functionPlural}List`,
-    setList: `set${functionPlural}List`,
-    clearList: `clear${functionPlural}List`,
-    create: `create${functionSingle}`,
-    set: `set${functionSingle}`,
-    update: `update${functionSingle}`,
-    delete: `delete${functionSingle}`,
-    getAll: `getAll${functionPlural}`,
-    setAll: `setAll${functionPlural}`,
-    clearAll: `clearAll${functionPlural}`,
-    select: `select${functionSingle}`,
-    unSelect: `unSelect${functionSingle}`,
-    selectAll: `selectAll${functionPlural}`,
-    unSelectAll: `unSelectAll${functionPlural}`,
-  }
-
-  // This function is able to supply callbacks with all actions.
-  const actionDispatchersStripped = dispatch => Object.fromEntries(
-    Object.keys(actionTypes).map(action => [
-      action,
-      obj => dispatch({
-        type: actionTypes[action],
-        payload: obj,
-        ...action.endsWith('All') ? {} : getParentObj(obj),
-      }),
-    ])
-  );
-  // actionDispatchers is created and returned to caller. There, actionDispatchers of all factories are 
-  // combined and can be obtained using getAllActionDispatchers(dispatch)
-  const actionDispatchers = dispatch => Object.fromEntries(
-    Object.keys(actionTypes)
-      .filter(action => !!mapActions[action])
-      .map(action => [
-        mapActions[action],
-        obj => dispatch({
-          type: actionTypes[action],
-          payload: obj,
-          ...action.endsWith('All') ? {} : getParentObj(obj),
-        }),
-      ])
-  );
-  
-  // Each callback or onResponse function will get the actions of all factories (getFooList(), createBar() etc) and also 
-  // the stripped actions (setList(), create() etc) of this particular factory. This allows callbacks to trigger specific actions (createFoo()) and
-  // also create reusable callbacks for different factories that use the stripped action (create())
-  const combineActionDispatchers = dispatch => ({
-    ...getAllActionDispatchers(dispatch),
-    ...actionDispatchersStripped(dispatch),
-  });
   
   const getFromState = (getState, key) => {
     const state = getState()[objectName];
@@ -333,6 +281,14 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
   //     callIfFunc(onCallerError, error);
   //   };
   // }
+  
+  // Each callback or onResponse function will get the actions of all factories (getFooList(), createBar() etc) and also 
+  // the stripped actions (setList(), create() etc) of this particular factory. This allows callbacks to trigger specific actions (createFoo()) and
+  // also create reusable callbacks for different factories that use the stripped action (create())
+  const combineActionDispatchers = dispatch => ({
+    ...getAllActionDispatchers(dispatch),
+    ...getActionDispatchersStripped(objectName)(dispatch),
+  });
 
   const actionFunctions = {
     get: (obj, { params = {}, callback, onError: onCallerError, axiosConfig, args } = {}) => async (dispatch, getState) => {
@@ -430,7 +386,7 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
       });
       try {
         const response = await _axios({ method, route, params, obj, original, axiosConfig, getState, args, prepare });
-        if (parent && original[parent] !== response.data[parent]) {
+        if (parent && typeof original === 'object' && original[parent] !== response.data[parent]) {
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
           dispatch({
@@ -580,7 +536,25 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
       ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
   ];
 
-  return {
+  const mapActions = {
+    get: `get${functionSingle}`,
+    set: `set${functionSingle}`,
+    getList: `get${functionPlural}List`,
+    setList: `set${functionPlural}List`,
+    clearList: `clear${functionPlural}List`,
+    create: `create${functionSingle}`,
+    set: `set${functionSingle}`,
+    update: `update${functionSingle}`,
+    delete: `delete${functionSingle}`,
+    getAll: `getAll${functionPlural}`,
+    setAll: `setAll${functionPlural}`,
+    clearAll: `clearAll${functionPlural}`,
+    select: `select${functionSingle}`,
+    unSelect: `unSelect${functionSingle}`,
+    selectAll: `selectAll${functionPlural}`,
+    unSelectAll: `unSelectAll${functionPlural}`,
+  }
+  const returnObj = {
     actionsStripped: {
       ...actionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
       ...actionsIncluded,
@@ -589,6 +563,31 @@ export default ({ objectName, config, getAllActionDispatchers }) => {
       ...actionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
       ...actionsIncluded,
     },
+  }
+
+  
+  // actionDispatchers and actionDispatchersStripped are created after the actionFunctions are created and returned to caller.
+  // There, actionDispatchers of all factories are combined and can be obtained using:
+  // getAllActionDispatchers(dispatch) to obtain the full name actions (e.g. getFooList) of all factories
+  // getActionDispatchersStripped(dispatch) to obtain the stripped actions (getList) of only this factory
+  const actionDispatchers = dispatch => Object.fromEntries(
+    actionsList.map(action => [
+      mapActions[action],
+      (...args) => dispatch(actionFunctions[action](...args)),
+      ])
+  );
+  const actionDispatchersStripped = (dispatch) => Object.fromEntries(
+    actionsList.map(action => [
+      action,
+      (...args) => dispatch(actionFunctions[action](...args)),
+    ])
+  );
+
+  
+
+  return {
+    ...returnObj,
     actionDispatchers,
+    actionDispatchersStripped,
   };
 };

@@ -125,13 +125,13 @@ const validateConfig = (config, defaultConfig) => {
   return newConfig;
 }
 
-const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers }) => {
+const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const config = validateConfig(cfg, defaultConfig);
   // Reuse actionTypes as there is no reason to create them twice
   const at = actionTypes(objectName, config);
   return {
     actionTypes: at,
-    ...actionsFactory({ objectName, config, getAllActionDispatchers }),
+    ...actionsFactory({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }),
     reducers: reducerFactory(objectName, config, at),
     ...getMapToProps(objectName, config),
     config,
@@ -146,24 +146,26 @@ export default ({
   id,
   byKey,
   parentId,
-  connect,
 }) => {
   // Save all actionDispatchers in this array
   const allActionDispatchers = [];
   // Function to obtain actionDispatchers after they have all been created to avoid a chicken and egg situation because
-  // the first factory requires the actions of all factories before those actions have been created.
+  // the first factory actions requires the actions of all factories before those actions have been created.
   const getAllActionDispatchers = dispatch =>
     allActionDispatchers.reduce((o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
+  // Same situation as getAllActionDispatchers: First generate actionDispatchersStripped for each objectName and supply a
+  // function to fetch them
+  const allActionDispatchersStripped = {};
+    const getActionDispatchersStripped = objectName => allActionDispatchersStripped[objectName];
   
   const fullFactory = {};
   Object.entries(fullConfig)
     .map(([objectName, config]) => {
-      const { actionDispatchers, ...factory } = getFactory({
+      const { actionDispatchers, actionDispatchersStripped, ...factory } = getFactory({
         objectName,
         config,
         defaultConfig: { 
           axios,
-          connect,
           onError,
           actions,
           id,
@@ -171,6 +173,7 @@ export default ({
           parentId,
         },
         getAllActionDispatchers,
+        getActionDispatchersStripped,
       });
       Object.entries(factory).map(([property, value]) => {
         fullFactory[property] = {
@@ -180,23 +183,9 @@ export default ({
       })
 
       allActionDispatchers.push(actionDispatchers);
+      allActionDispatchersStripped[objectName] = actionDispatchersStripped;
       return [objectName, factory]
     });
   
-  fullFactory.connect = (connect, mapStateToProps, mapDispatchToProps, mergeProps, options) => component => {
-      console.log({ mapStateToProps, mapDispatchToProps, mergeProps, options })
-      // console.log({ factoryNames, mapStateToProps, mapDispatchToProps, mergeProps, options })
-      return connect(
-        mapStateToProps,
-        // (state, ownProps) => ({
-        //   ...mapStateToProps ? mapStateToProps(state, ownProps) : {},
-        // }),
-        mapDispatchToProps,
-        // {
-        //   ...mapDispatchToProps ? mapDispatchToProps : {},
-        // },
-      mergeProps,
-      options
-    )(component)}
   return fullFactory;
 }
