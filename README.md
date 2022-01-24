@@ -13,24 +13,77 @@ import reduxCrudFactory from 'redux-crud-factory';
 import axios from 'axios';
 
 // Our object name 'farmAnimals' must be camelCase
-export const factory = reduxCrudFactory({ config: {
-    axios,                                              // Default axios instance
-    actions: {
-        get: true,
-        getList: true,
-        create: true,
-        update: true,
-        delete: true,
-    },
+export const factory = reduxCrudFactory({
+  axios,
+  config: {
     farmAnimals: {
-        route: 'https://example.com/api/farm-animals/', // Non-existing route!
+      route: 'https://example.com/api/farm-animals',
+      actions: {
+        create: true,           // createFarmAnimal(obj) will perform post request to https://example.com/api/farm-animals
+        get: true,              // getFarmAnimal(42) will perform get request to https://example.com/api/farm-animals/42
+        getList: true,          // getFarmAnimalsList() will perform get request to https://example.com/api/farm-animals
+        update: true,           // updateFarmAnimal(obj) will perform patch request to https://example.com/api/farm-animals/42
+        delete: true,           // deleteFarmAnimal(obj) will perform delete request to https://example.com/api/farm-animals/42
+      },
     },
-    plantsAndVegetables: {
-        route: 'https://example.com/api/plants-and-vegetables/',
-        actions: { delete: false },                     // Add or disable actions if you like to don't repeat yourself
-        axios: otherAxios,                              // Maybe this route needs authentication
+   },
+});
+```
+
+Or generate more elaborate cruds with many bells and whistles
+
+```javascript
+import reduxCrudFactory from 'redux-crud-factory';
+import axios from 'axios';
+import otherAxios from './OtherAxios';
+
+// Our object name 'farmAnimals' must be camelCase
+export const factory = reduxCrudFactory({
+  axios: axios.create({                                   // Default axios instance that is used for each factory in the config object
+    baseURL: 'https://example.com'
+  }),
+  onError: console.error,                                 // Log errors to console or use react-toastify
+  actions: {                                              // Default actions for all the factories
+    get: true,
+    getList: true,
+    create: true,
+    update: true,
+    delete: true,
+  },
+  config: {
+    farmAnimals: {
+      route: '/api/farm-animals/',                      // Trailing slash here
+      actions: { get: true },                           // Duplicate get action as it is already available, can be removed
     },
-}});
+    plants: {
+      route: '/api/plants',                             // No trailing slash on this route
+      actions: { delete: false },                       // Add or disable actions if you like to don't repeat yourself
+      axios: otherAxios,                                // Maybe this route needs authentication
+      
+      includeActions: {                                 // Create custom actions!
+        sellPlant: {                                    // The following functions are now generated: getPlant, getPlantsList, createPlant, updatePlant & sellPlant
+                              
+          method: 'post',                               // Any http method required
+          
+          route: ({ id }) =>                            // route can be string or function called when you call sellPlant(plant, { args: { your stuff.. }, params ))
+            `/api/plants-n-veggies/${id}/sell',         // Request params are handled automatically, args can be used in route, prepare or onResponse
+            
+          prepare: (plant, { args, params } =>          // Do something with additional args or params before data is sent to api
+            ({ ...plant }), 
+                                                        // Handle response.data from api. 
+          onResponse: (plant, { updatePlant, getFarmAnimalsList, params, args }) =>
+            {
+              updatePlant(plant);                       // All redux actions are available here. Update the plant in the state
+              getFarmAnimalsList({                      // Also request farmAnimals based on this plant id. State update will be automatic as
+                params: plant: plant.id,                // getFarmAnimalsList() is a standard action
+               });
+            },
+          },
+        },
+      },
+    },
+  },
+});
 
 ```
 Show what we got in the console
@@ -112,13 +165,13 @@ In the simple example above the specification for a complete `CRUD` are created.
 [
     {
         id: 1,
-        type: 'cow',
-        name: 'Bertha'
+        type: 'donkey',
+        name: 'Benjamin'
     },
     {
         id: 2,
         type: 'goat',
-        name: 'Billy'
+        name: 'Muriel'
     }
 ]
 ```
