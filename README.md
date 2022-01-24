@@ -12,29 +12,96 @@ Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](ht
 import reduxCrudFactory from 'redux-crud-factory';
 import axios from 'axios';
 
-// Our object name must be camelCase
-const objectName = 'farmAnimals';
-const config = {
-    route: 'https://example.com/api/farm-animals/', // Non-existing route!
-    axios,
-    actions: {
-        getList: true,
-        create: true,
-        update: true,
-        delete: true,
+// Our object name 'farmAnimals' must be camelCase
+export const factory = reduxCrudFactory({
+  axios,
+  config: {
+    farmAnimals: {
+      route: 'https://example.com/api/farm-animals',
+      actions: {
+        create: true,           // createFarmAnimal(obj) will perform post request to https://example.com/api/farm-animals
+        get: true,              // getFarmAnimal(42) will perform get request to https://example.com/api/farm-animals/42
+        getList: true,          // getFarmAnimalsList() will perform get request to https://example.com/api/farm-animals
+        update: true,           // updateFarmAnimal(obj) will perform patch request to https://example.com/api/farm-animals/42
+        delete: true,           // deleteFarmAnimal(obj) will perform delete request to https://example.com/api/farm-animals/42
+      },
     },
-};
-
-export const farmAnimalsFactory = reduxCrudFactory(
-    objectName,
-    config
-);
-
-// Show what we got in the console
-console.log(farmAnimalsFactory);
+   },
+});
 ```
 
-### The object `farmAnimalsFactory` contains the following components
+Or generate more elaborate cruds with many bells and whistles
+
+```javascript
+import reduxCrudFactory from 'redux-crud-factory';
+import axios from 'axios';
+import otherAxios from './OtherAxios';
+
+// Our object name 'farmAnimals' must be camelCase
+export const factory = reduxCrudFactory({
+  axios: axios.create({                                   // Default axios instance that is used for each factory in the config object
+    baseURL: 'https://example.com'
+  }),
+  onError: console.error,                                 // Log errors to console or use react-toastify
+  actions: {                                              // Default actions for all the factories
+    get: true,
+    getList: true,
+    create: true,
+    update: true,
+    delete: true,
+  },
+  config: {
+    farmAnimals: {
+      route: '/api/farm-animals/',                      // Trailing slash here
+      actions: { get: true },                           // Duplicate get action as it is already available, can be removed
+    },
+    plants: {
+      route: '/api/plants',                             // No trailing slash on this route
+      actions: { delete: false },                       // Add or disable actions if you like to don't repeat yourself
+      axios: otherAxios,                                // Maybe this route needs authentication
+      
+      includeActions: {                                 // Create custom actions!
+        sellPlant: {                                    // The following functions are now generated: getPlant, getPlantsList, createPlant, updatePlant & sellPlant
+                              
+          method: 'post',                               // Any http method required
+          
+          route: ({ id }) =>                            // route can be string or function called when you call sellPlant(plant, { args: { your stuff.. }, params ))
+            `/api/plants-n-veggies/${id}/sell',         // Request params are handled automatically, args can be used in route, prepare or onResponse
+            
+          prepare: (plant, { args, params } =>          // Do something with additional args or params before data is sent to api
+            ({ ...plant }), 
+                                                        // Handle response.data from api. 
+          onResponse: (plant, { updatePlant, getFarmAnimalsList, params, args }) =>
+            {
+              updatePlant(plant);                       // All redux actions are available here. Update the plant in the state
+              getFarmAnimalsList({                      // Also request farmAnimals based on this plant id. State update will be automatic as
+                params: plant: plant.id,                // getFarmAnimalsList() is a standard action
+               });
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+```
+Show what we got in the console
+```
+> console.log(factory)
+
+{
+  actionTypes: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  actions: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  actionsStripped: {farmAnimals: {…}, plantsAndVegetables: {…}},
+  mapToProps: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  mapToPropsStripped: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  reducers: {farmAnimals: ƒ, plantsAndVegetables: ƒ},
+  config: {farmAnimals: {…}, plantsAndVegetables: {…}},
+}
+```
+
+### The object `factory` contains the following components
 
 ##### `actionTypes`:
 > All the Redux action types, for instance `{ getList: 'GET_FARM_ANIMALS_LIST', create: 'CREATE_FARM_ANIMAL', ... }`. Note that name `farmAnimals` is used to create human readable Redux action types. Single/plural is automatically handled including words like category/categories.
@@ -42,16 +109,14 @@ console.log(farmAnimalsFactory);
 > All available functions that can trigger Redux actions with formatted names: `{ getFarmAnimalsList: ƒ, createFarmAnimal: ƒ, updateFarmAnimal: ƒ, ... }`.
 ##### `actionsStripped`: 
 > Same as `actions` above but with stripped down names: `{ getList: ƒ, create: ƒ, update: ƒ, ... }`.
-##### `mapStateToProps`: 
-> The function that gets data from the store into our React component: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
-##### `mapStateToPropsStripped`: 
+##### `mapToProps`: 
+> The functions that gets data from the store into our React component: `{ farmAnimalsList: { ... }, farmAnimalsIsLoading: false, farmAnimalsHasErrored: false, ... }`. The formatted lis
+##### `mapToPropsStripped`: 
 >  Same as `mapStateToProps` however with stripped down names: `{ list: { ... }, getListIsLoading: false, getListHasErrored: false, ... }`.
-##### `reducer`: 
-> The Redux reducer function that will handle state management
-##### `reducerAsObject`: 
->  The same Redux reducer function supplied as `{ farmAnimals: ƒ }`. This object can be easily used with `combineReducers()` from Redux (see example below) and leads to a *single source of truth* for the object name.
+##### `reducers`: 
+> The Redux reducer function that will handle state managementfarmAnimals: ƒ }`. This object can be easily used with `combineReducers` from Redux (see example below) and leads to a *single source of truth* for the object name: `combineReducers({ ...factory.reducers, other: otherReducer })`
 ##### `config`: 
-> The same `config` object as supplied however it contained all available options.
+> The same `config` object as supplied however expanded with all the available options.
 
 ### Connect to the redux store
 ```javascript
@@ -68,10 +133,7 @@ const consoleLogReducer = (state = null, { type, ...action }) => {
 
 const rootReducer = (state, action) => consoleLogReducer(
     combineReducers({
-        ...farmAnimalsFactory.reducerAsObject,
-        // The above is identical to:
-        // farmAnimals: farmAnimalsFactory.reducer,
-
+        ...factory.reducers
         // Add more reducers here...
     })(state, action),
     action
@@ -103,13 +165,13 @@ In the simple example above the specification for a complete `CRUD` are created.
 [
     {
         id: 1,
-        type: 'cow',
-        name: 'Bertha'
+        type: 'donkey',
+        name: 'Benjamin'
     },
     {
         id: 2,
         type: 'goat',
-        name: 'Billy'
+        name: 'Muriel'
     }
 ]
 ```
@@ -130,13 +192,13 @@ In the simple example above the specification for a complete `CRUD` are created.
                 name: 'Billy',
             },
         },
-        createHasErrored: false,
+        createError: null,
         createIsLoading: false,
-        deleteHasErrored: false,
+        deleteError: null,
         deleteIsLoading: false,
-        getListHasErrored: false,
+        getListError: null,
         getListIsLoading: false,
-        updateHasErrored: false,
+        updateError: null,
         updateIsLoading: false
     },
 }
@@ -173,8 +235,8 @@ class FarmAnimalsList extends Component {
 };
 
 export default connect(
-    farmAnimalsFactory.mapStateToProps,
-    farmAnimalsFactory.actions
+    factory.mapToProps.farmAnimals,
+    factory.actions.farmAnimals
 )(FarmAnimalsList);
 ```
 and
