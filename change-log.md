@@ -20,4 +20,5 @@
 - Add default config fields: reduxCrudFactory({ config, axios, id, onError, actions, connect }) that are merged with factory config
 - Correctly handle update action when object key (byKey !== id) changes or when parent key changes.
 - Fix not mapping objects to props when id !== byKey
-- Always return 2 arguments to callback instead of 3
+- Always give 2 arguments to callback instead of 3 (combine second and third argument)
+- All callbacks now get async redux actions as well allowing a callback or onResponse to trigger another api call.
