@@ -43,6 +43,7 @@ const validateConfig = (config, defaultConfig) => {
   }
   
   const detailRoute = getDetailRoute(route, id);
+  
   const newConfig = {
     id,
     byKey: byKey ? byKey : id,
@@ -62,6 +63,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { getList: {
             method: 'get',
             prepare: null,
+            callback: null,
+            onError: null,
             route,
             ...typeof actions.getList === 'object' ? actions.getList : {},
           }}
@@ -70,6 +73,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { getAll: {
             method: 'get',
             prepare: null,
+            callback: null,
+            onError: null,
             route,
             ...typeof actions.getAll === 'object' ? actions.getAll : {},
           }}
@@ -78,6 +83,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { create: {
             method: 'post',
             prepare: null,
+            callback: null,
+            onError: null,
             route,
             ...typeof actions.create === 'object' ? actions.create : {},
           }}
@@ -86,6 +93,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { get: {
             method: 'get',
             prepare: null,
+            callback: null,
+            onError: null,
             route: detailRoute,
             ...typeof actions.get === 'object' ? actions.get : {},
           }}
@@ -94,6 +103,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { update: {
             method: 'patch',
             prepare: null,
+            callback: null,
+            onError: null,
             route: detailRoute,
             ...typeof actions.update === 'object' ? actions.update : {},
           }}
@@ -102,6 +113,8 @@ const validateConfig = (config, defaultConfig) => {
         ? { delete: {
             method: 'delete',
             prepare: null,
+            callback: null,
+            onError: null,
             route: detailRoute,
             ...typeof actions.delete === 'object' ? actions.delete : {},
           }}
@@ -116,7 +129,13 @@ const validateConfig = (config, defaultConfig) => {
               select: 'single',
             },
     },
-    includeActions,
+    includeActions: Object.entries(includeActions)
+      .reduce(
+        (o, [key, { isAsync=true, method='get', ...obj}]) => (
+          { ...o, [key]: { ...obj, isAsync, method }}
+        ),
+        {}
+      ),
     route,
   };
   if (newConfig.actions.select === 'single') {
