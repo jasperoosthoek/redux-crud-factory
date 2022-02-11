@@ -22,3 +22,7 @@
 - Fix not mapping objects to props when id !== byKey
 - Always give 2 arguments to callback instead of 3 (combine second and third argument)
 - All callbacks now get async redux actions as well allowing a callback or onResponse to trigger another api call.
+
+
+##### Version 0.1.3
+- Fix: getList actions not triggering getListIsLoading redux action

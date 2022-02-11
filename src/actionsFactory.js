@@ -321,7 +321,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return;
       }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getList;
-      dispatch({ type: actionTypes.getList, ...getParentObj(params, parent) });
+      dispatch({ type: actionTypes.getListIsLoading, ...getParentObj(params, parent) });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
