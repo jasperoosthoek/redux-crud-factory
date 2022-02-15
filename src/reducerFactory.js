@@ -155,7 +155,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           createError: action.payload || null,
         };
       case actionTypes.delete:
-        const newList = { ...newState || {} };
+        const newList = { ...(newState || {}).list };
         if (newList[action.payload[byKey]]) {
           delete newList[action.payload[byKey]];
         }

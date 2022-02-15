@@ -31,3 +31,6 @@
 
 ##### Version 0.1.4
 - **Breaking change**: Default/initial list object in state is now `null` instead of `{}` to differentiate between *not ready* and *no data* respectively
+
+##### Version 0.1.5
+- Fix: Delete action in reducer messes up state
