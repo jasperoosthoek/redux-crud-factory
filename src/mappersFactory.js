@@ -40,7 +40,7 @@ export const getMapToProps = (objectName, config) => {
   // the state or give null when the object is not found
   const singleObjectByIdProp = (state, ownProps) => ({
     ...(typeof ownProps[byKey] !== 'undefined')
-      ? { [camelCaseNameSingle]: state.list[ownProps[byKey]] || null } 
+      ? { [camelCaseNameSingle]: state.list ? state.list[ownProps[byKey]] : null } 
       : {}
   })
   
@@ -85,7 +85,7 @@ export const getMapToProps = (objectName, config) => {
       ?
         {
           [`selected${camelCaseId}`]: state[selectedId],
-          selected: state[selectedId] ? state.list[state[selectedId]] : null,
+          selected: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
         }
       : {},
     ...propsIncluded(state),
@@ -124,7 +124,7 @@ export const getMapToProps = (objectName, config) => {
       ?
         // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
         {
-          [`${objectName}List`]: state.list || {},
+          [`${objectName}List`]: state.list,
           [`get${functionPlural}ListIsLoading`]: state.getListIsLoading,
           [`get${functionPlural}ListError`]: state.getListError,
         }
@@ -133,7 +133,7 @@ export const getMapToProps = (objectName, config) => {
       ?
         {
           [`selected${functionSingle}${camelCaseId}`]: state[selectedId],
-          [`selected${functionSingle}`]: state[selectedId] ? state.list[state[selectedId]] : null,
+          [`selected${functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
         }
       : {},
     ...propsIncluded(state),

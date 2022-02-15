@@ -20,7 +20,7 @@ const getInitialState = ({
   actions,
   includeActions,
 }) => ({
-  list: {},
+  list: null,
   ...getAsyncInitialState('getList'),
   ...actions.get ? getAsyncInitialState('get') : {},
   ...actions.create ? getAsyncInitialState('create') : {},
@@ -109,7 +109,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
       case actionTypes.set:
         return {
           ...newState,
-          list: { ...newState.list, [action.payload[byKey]]: action.payload },
+          list: { ...newState.list || {}, [action.payload[byKey]]: action.payload },
           // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
           getIsLoading: false,
           getError: null,
@@ -155,7 +155,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           createError: action.payload || null,
         };
       case actionTypes.delete:
-        const newList = { ...newState.list };
+        const newList = { ...newState || {} };
         if (newList[action.payload[byKey]]) {
           delete newList[action.payload[byKey]];
         }
@@ -227,7 +227,10 @@ export default (objectName, config = {}, actionTypes) => {
     }
     const parentKey = action.parent ? action.parent : null;
 
-    let subState = subReducer((state || getInitialState(config)).list[parentKey], action);
+    let subState = subReducer(
+      ((state || getInitialState(config)).list || {})[parentKey],
+      action
+    );
 
     const newState = {
       ...state ? state : getInitialState(config),

@@ -1,6 +1,5 @@
 
 ##### Version 0.0.18
-
 - Split `reducerFactory` and move `mapToProps` function to `mappersFactory`
 - Cleaning up state: prevent actions from other reducers to create initial state or garbage in state
 
@@ -23,6 +22,12 @@
 - Always give 2 arguments to callback instead of 3 (combine second and third argument)
 - All callbacks now get async redux actions as well allowing a callback or onResponse to trigger another api call.
 
+##### Version 0.1.2
+- Each action function now has a `callback` and `onError` function
+- Make `onResponse` function for custom actions optional
 
 ##### Version 0.1.3
 - Fix: getList actions not triggering getListIsLoading redux action
+
+##### Version 0.1.4
+- **Breaking change**: Default/initial list object in state is now `null` instead of `{}` to differentiate between *not ready* and *no data* respectively
