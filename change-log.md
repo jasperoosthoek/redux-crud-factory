@@ -34,3 +34,6 @@
 
 ##### Version 0.1.5
 - Fix: Delete action in reducer messes up state
+
+##### Version 0.1.6
+- Give first argument of `includeAction` as `obj` argument to `onResponse` function

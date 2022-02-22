@@ -520,6 +520,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                 onResponse,
                 response.data,
                 {
+                  obj,
                   args,
                   dispatch,
                   getState,
