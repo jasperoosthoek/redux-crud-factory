@@ -37,3 +37,6 @@
 
 ##### Version 0.1.6
 - Give first argument of `includeAction` as `obj` argument to `onResponse` function
+
+##### Version 0.1.7
+- Reset selected value for single selection when setting list when it is selected in the previous state but it no longer exists in the new state

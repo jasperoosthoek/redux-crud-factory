@@ -49,7 +49,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
   } = config;
 
   return (state, action) => {
-    const newState = state || getInitialState(config);
+    const prevState = state || getInitialState(config);
 
     for (let [act, { isAsync }] of Object.entries(includeActions).filter(([dummy, { isAsync }]) => isAsync)) {
       let actionIsLoading = `${act}IsLoading`;
@@ -58,14 +58,14 @@ const getSubReducer = (objectName, config, actionTypes) => {
         case actionTypes[actionIsLoading]:
           let isLoading = action.payload === false ? false : true;
           return {
-            ...newState,
+            ...prevState,
             [actionIsLoading]: isLoading,
             ...isLoading ? { [actionError]: null } : {},
           };
         case actionTypes[actionError]:
           let Error = action.payload ? action.payload : null;
           return {
-            ...newState,
+            ...prevState,
             [actionError]: Error,
             ...Error ? { [actionIsLoading]: false } : {},
           };
@@ -73,10 +73,13 @@ const getSubReducer = (objectName, config, actionTypes) => {
     }
     switch (action.type) {
       case actionTypes.setList:
+        let list = arrayToObject(action.payload, byKey);
         return {
-          ...newState,
-          list: arrayToObject(action.payload, byKey),
-          ...actions.select === 'single'
+          ...prevState,
+          list,
+          // Reset selected value when it is selected in the previous state but it no longer exists in the
+          // new state. Do not touch selected value when it still exists in the new state.
+          ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
             ? { [selectedId]: null }
             : {},
           getListIsLoading: false,
@@ -84,32 +87,32 @@ const getSubReducer = (objectName, config, actionTypes) => {
         };
       case actionTypes.getListIsLoading:
         return {
-          ...newState,
+          ...prevState,
           getListIsLoading: action.payload === false ? false : true,
           getListError: null,
         };
       case actionTypes.getListError:
         return {
-          ...newState,
+          ...prevState,
           getListIsLoading: false,
           getListError: action.payload || null,
         };
       case actionTypes.getIsLoading:
         return {
-          ...newState,
+          ...prevState,
           getIsLoading: action.payload === false ? false : true,
           getError: null,
         };
       case actionTypes.getError:
         return {
-          ...newState,
+          ...prevState,
           getIsLoading: false,
           getError: action.payload || null,
         };
       case actionTypes.set:
         return {
-          ...newState,
-          list: { ...newState.list || {}, [action.payload[byKey]]: action.payload },
+          ...prevState,
+          list: { ...prevState.list || {}, [action.payload[byKey]]: action.payload },
           // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
           getIsLoading: false,
           getError: null,
@@ -118,52 +121,52 @@ const getSubReducer = (objectName, config, actionTypes) => {
         };
       case actionTypes.update:
         return {
-          ...newState,
+          ...prevState,
           list: {
             ...action.payload[id] === action.id && action.payload[byKey] === action.key
-              ? newState.list
+              ? prevState.list
               // When id !== byKey it is possible to change the key. Therefore we need the id to be able to remove the
               // original object
-              : Object.fromEntries(Object.entries(newState.list).filter(([key, obj]) => obj[id] !== action.id && obj[byKey] !== action.key)),
-            [action.payload[byKey]]: { ...newState.list[action.payload[byKey]], ...action.payload },
+              : Object.fromEntries(Object.entries(prevState.list).filter(([key, obj]) => obj[id] !== action.id && obj[byKey] !== action.key)),
+            [action.payload[byKey]]: { ...prevState.list[action.payload[byKey]], ...action.payload },
           },
           updateIsLoading: false,
           updateError: null,
         };
         case actionTypes.updateIsLoading:
           return {
-            ...newState,
+            ...prevState,
             updateIsLoading: action.payload === false ? false : true,
             updateError: null,
           };
         case actionTypes.updateError:
           return {
-            ...newState,
+            ...prevState,
             updateIsLoading: false,
             updateError: action.payload || null,
           };
       case actionTypes.createIsLoading:
         return {
-          ...newState,
+          ...prevState,
           createIsLoading: action.payload === false ? false : true,
           createError: null,
         };
       case actionTypes.createError:
         return {
-          ...newState,
+          ...prevState,
           createIsLoading: false,
           createError: action.payload || null,
         };
       case actionTypes.delete:
-        const newList = { ...(newState || {}).list };
+        const newList = { ...(prevState || {}).list };
         if (newList[action.payload[byKey]]) {
           delete newList[action.payload[byKey]];
         }
         return {
-          ...newState,
+          ...prevState,
           ...actions.select === 'single'
             ? {
-                [selectedId]: newState[selectedId] === action.payload[byKey] ? null : newState[selectedId],
+                [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
               }
             : {},
           list: newList,
@@ -172,26 +175,26 @@ const getSubReducer = (objectName, config, actionTypes) => {
         };
       case actionTypes.deleteIsLoading:
         return {
-          ...newState,
+          ...prevState,
           deleteIsLoading: action.payload === false ? false : true,
           deleteError: null,
         };
       case actionTypes.deleteError:
         return {
-          ...newState,
+          ...prevState,
           deleteIsLoading: false,
           deleteError: action.payload || null,
         };
       case actionTypes.select:
         return {
-          ...newState,
+          ...prevState,
           ...actions.select === 'single'
             ? { [selectedId]: action.payload[byKey] }
             : {},
         };
       case actionTypes.unSelect:
         return {
-          ...newState,
+          ...prevState,
           ...actions.select === 'single'
             ? { [selectedId]: null }
             : {},
@@ -232,7 +235,7 @@ export default (objectName, config = {}, actionTypes) => {
       action
     );
 
-    const newState = {
+    const prevState = {
       ...state ? state : getInitialState(config),
       list: {
         ...state && state.list ? state.list : {},
@@ -247,13 +250,13 @@ export default (objectName, config = {}, actionTypes) => {
     switch (action.type) {
       case actionTypes.getAllIsLoading:
         return {
-          ...newState,
+          ...prevState,
           getAllIsLoading: action.payload === false ? false : true,
           getAllError: null,
         };
       case actionTypes.getAllError:
         return {
-          ...newState,
+          ...prevState,
           getAllIsLoading: false,
           getAllError: action.payload || null,
         };
@@ -284,22 +287,22 @@ export default (objectName, config = {}, actionTypes) => {
         };
       case actionTypes.create:
       case actionTypes.update:
-        if (recursive && !newState[action.payload[id]]) {
+        if (recursive && !prevState[action.payload[id]]) {
           // A recursive object is created or updated, create empty state for the children of this object.
           // Note that the parent key does not necessarily needs to be the primery key that is considered unmutable.
           // It can also be another key and it is allowed to change. Therefore, handle the update case as well
           // and also check if action.payload[id] already exists.
           return {
-            ...newState,
+            ...prevState,
             list: {
-              ...newState.list,
+              ...prevState.list,
               [action.payload[id]]: getInitialState(config),
             }
           }
         }
       break
     };
-    return newState;
+    return prevState;
   };
 
   return reducer;
