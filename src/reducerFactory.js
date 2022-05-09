@@ -270,8 +270,10 @@ export default (objectName, config = {}, actionTypes) => {
         action.payload.map((o) => {
           if (!obj[o[parent]]) {
             obj[o[parent]] = getInitialState(config);
+            obj[o[parent]].list = { [o[byKey]]: o };
+          } else {
+            obj[o[parent]].list[o[byKey]] = o;
           }
-          obj[o[parent]].list[o[byKey]] = o;
         });
         if (recursive) {
           // Create empty state too for children of this object

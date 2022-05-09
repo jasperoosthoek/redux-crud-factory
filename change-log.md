@@ -40,3 +40,6 @@
 
 ##### Version 0.1.7
 - Reset selected value for single selection when setting list when it is selected in the previous state but it no longer exists in the new state
+
+##### Version 0.1.8
+- Fix setting object getAll reducer when list === null in initial state 
