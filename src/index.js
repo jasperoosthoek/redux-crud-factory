@@ -1,27 +1,21 @@
 import actionsFactory, { actionTypes, getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
-import { getMapToProps } from './mappersFactory';
-import { includeHooks } from './hooksFactory';
+import hooksFactory from './hooksFactory';
+import mappersFactory from './mappersFactory';
 import { toUpperCamelCase } from './utils';
 
-const defaultActions = {
-  get: true,
-  getList: true,
-  create: true,
-  update: true,
-  delete: true,
-  select: 'single',
-};
 
 const validateConfig = (config, defaultConfig) => {
   const {
     // The id to use when perform crud actions
     id = defaultConfig.id || 'id',
+    parseIdToInt = defaultConfig.parseIdToInt || false,
     // The key to sort by in the state
     byKey = defaultConfig.byKey || null,
     includeProps = null,
     parent = null,
     parentId = defaultConfig.parentId || 'id',
+    parseParentToInt = defaultConfig.parseParentToInt || false,
     recursive = false,
     route = null,
     includeActions = {},
@@ -33,14 +27,24 @@ const validateConfig = (config, defaultConfig) => {
   // Merge default actions with actions for this factory
   const actions =
     !config.actions && !defaultConfig.actions
-    ? defaultActions
+    ? {
+        get: true,
+        getList: true,
+        create: true,
+        update: true,
+        delete: true,
+        select: false,
+        ...parent ? { getAll: true } : {},
+      }
     : {
       ...defaultConfig.actions ? defaultConfig.actions : {},
       ...config.actions ? config.actions : {},
     };
 
-  if (recursive && !parent) {
-    throw 'ReduxCrudFactory: The option "recursive" is only valid when "parent" is set.';
+  if (!parent) {
+    if (recursive) {
+      console.error('ReduxCrudFactory: The option "recursive" is only valid when "parent" is set.');
+    }
   }
   
   const detailRoute = getDetailRoute(route, id);
@@ -48,11 +52,13 @@ const validateConfig = (config, defaultConfig) => {
   const newConfig = {
     id,
     byKey: byKey ? byKey : id,
+    parseIdToInt,
     parent,
     ...parent
       ? {
-            parentId,
-            recursive,
+          parentId,
+          recursive,
+          parseParentToInt,
         }
       : {},
     includeProps,
@@ -147,15 +153,17 @@ const validateConfig = (config, defaultConfig) => {
 
 const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const config = validateConfig(cfg, defaultConfig);
-  // Reuse actionTypes as there is no reason to create them twice
-  const at = actionTypes(objectName, config);
-  return {
-    actionTypes: at,
+  const factory = {
+    actionTypes: actionTypes(objectName, config),
     ...actionsFactory({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }),
-    reducers: reducerFactory(objectName, config, at),
-    ...getMapToProps(objectName, config),
+    ...mappersFactory(objectName, config),
     config,
   };
+  return {
+    ...factory,
+    ...reducerFactory(objectName, config, factory),
+    ...hooksFactory(objectName, config, factory),
+  }
 }
 
 export default ({
@@ -195,10 +203,7 @@ export default ({
         getAllActionDispatchers,
         getActionDispatchersStripped,
       });
-      Object.entries({
-        ...factory,
-        ...includeHooks(factory),
-      }).map(([property, value]) => {
+      Object.entries(factory).map(([property, value]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
           [objectName]: value,

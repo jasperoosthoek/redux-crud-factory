@@ -208,7 +208,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
   }
 }
 
-export default (objectName, config = {}, actionTypes) => {
+export default (objectName, config = {}, { actionTypes }) => {
   const {
     id,
     byKey,
@@ -304,7 +304,7 @@ export default (objectName, config = {}, actionTypes) => {
     return prevState;
   };
 
-  return reducer;
+  return { reducers: reducer };
 };
 
 

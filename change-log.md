@@ -50,3 +50,9 @@
 ##### Version 0.2.0
 - Include `hooks` and `hooksStripped` object which perform the same as redux `connect`
 - Combine `mapToProps` and `mapToPropsStripped` to a single function because it is more DRY
+
+##### Version 0.2.1
+- Turn off `select` in default config and turn on `getAll` action when parent is set
+- New `parseIdToInt` and `parseParentToInt` option to allow for string to be used as integer id
+- Test for allowed props in hooks
+

@@ -1,7 +1,7 @@
 import { formatFunctionNames } from './actionsFactory';
 import { toUpperCamelCase, arrayToObject } from './utils';
 
-export const getMapToProps = (objectName, config) => {
+export default (objectName, config) => {
   const {
     id,
     byKey,
@@ -12,6 +12,8 @@ export const getMapToProps = (objectName, config) => {
     selectedId,
     actions,
     includeActions,
+    parseIdToInt,
+    parseParentToInt,
   } = config;
   const { functionSingle, functionPlural, camelCaseNameSingle } = formatFunctionNames(objectName);
   const camelCaseId = toUpperCamelCase(byKey);
@@ -27,8 +29,7 @@ export const getMapToProps = (objectName, config) => {
     ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
       ...obj,
       ...isAsync
-        ?
-          {
+        ? {
             [`${action}IsLoading`]: state[`${action}IsLoading`],
             [`${action}Error`]: state[`${action}Error`],
           }
@@ -40,7 +41,14 @@ export const getMapToProps = (objectName, config) => {
   // the state or give null when the object is not found
   const singleObjectByIdProp = (state, ownProps) => ({
     ...(typeof ownProps[byKey] !== 'undefined')
-      ? { [camelCaseNameSingle]: state.list ? state.list[ownProps[byKey]] : null } 
+      ? {
+          [camelCaseNameSingle]:
+            state.list 
+              ? state.list[
+                  parseIdToInt ? parseInt(ownProps[byKey]): ownProps[byKey]
+                ]
+              : null
+        } 
       : {}
   })
   
@@ -153,7 +161,7 @@ export const getMapToProps = (objectName, config) => {
       console.error('When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).');
       return null;
     }
-    const parentFromProp = ownProps[parent];
+    const parentFromProp = ownProps[parseParentToInt ? parseInt(parent) : parent];
     // When the parent is an object, retrieve the parentKey by using parentId from the object
     const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
     return ({

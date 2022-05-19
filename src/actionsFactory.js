@@ -64,6 +64,7 @@ const formatActionTypes = (objectName, config) => {
     includeActions,
   } = config;
   const { actionSingle, actionPlural } = formatActionNames(objectName);
+  
   if (typeof actionTypeStyle == 'function') {
     return {
       ...actions.get
@@ -219,6 +220,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   const { functionSingle, functionPlural } = formatFunctionNames(objectName);
   const { actionSingle, actionPlural } = formatActionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
+  console.log({ actionTypes})
 
   
   const getParentObj = (obj) => {

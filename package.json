@@ -1,6 +1,6 @@
 {
     "name": "redux-crud-factory",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "author": "jasperoosthoek",
     "license": "MIT",
     "repository": "https://github.com/jasperoosthoek/redux-crud-factory",
@@ -24,7 +24,7 @@
         "_build": "babel src --extensions '.js' --source-maps=true",
         "build:cjs": "NODE_ENV=production BABEL_ENV=cjs npm run _build -- --out-dir lib-cjs --delete-dir-on-start",
         "build:esm": "NODE_ENV=production BABEL_ENV=esm npm run _build -- --out-dir lib-esm --delete-dir-on-start",
-        "prepublishOnly": "npm run build:esm && npm run build:cjs"
+        "prepublishOnly": "npm install && npm run build:esm && npm run build:cjs"
     },
     "peerDependencies": {
         "react-redux": "^7.2.6"
