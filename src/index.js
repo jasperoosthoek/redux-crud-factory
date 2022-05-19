@@ -1,6 +1,7 @@
 import actionsFactory, { actionTypes, getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import { getMapToProps } from './mappersFactory';
+import { includeHooks } from './hooksFactory';
 import { toUpperCamelCase } from './utils';
 
 const defaultActions = {
@@ -194,7 +195,10 @@ export default ({
         getAllActionDispatchers,
         getActionDispatchersStripped,
       });
-      Object.entries(factory).map(([property, value]) => {
+      Object.entries({
+        ...factory,
+        ...includeHooks(factory),
+      }).map(([property, value]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
           [objectName]: value,

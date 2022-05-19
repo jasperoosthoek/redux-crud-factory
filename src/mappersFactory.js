@@ -147,78 +147,51 @@ export const getMapToProps = (objectName, config) => {
       mapToProps: (state, ownProps) => mapToProps(state[objectName], ownProps),
     };
   }
+
+  const getMapToPropsWithParent = stripped => (state, ownProps) => {
+    if (typeof ownProps !== 'object') {
+      console.error('When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).');
+      return null;
+    }
+    const parentFromProp = ownProps[parent];
+    // When the parent is an object, retrieve the parentKey by using parentId from the object
+    const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
+    return ({
+        // If the parent key is not specified in ownProps then it is assumed to be null
+        ...ownProps[parent] || ownProps[parent] === null
+          ? 
+            // Return child state by parent
+            state[objectName].list !== null && state[objectName].list[parentKey]
+              ? (
+                stripped
+                  ? mapToPropsStripped(state[objectName].list[parentKey], ownProps)
+                  : mapToProps(state[objectName].list[parentKey], ownProps)
+              )
+              : {}
+          :
+            {
+              // Return embedded list by [parent][key]
+              [stripped ? 'list' : `${objectName}List`]:
+                state[objectName].list === null
+                  ? null
+                  : Object.fromEntries(
+                      Object.entries(state[objectName].list).map(
+                        ([parentKey, { list }]) => [parentKey, list]
+                      )
+                    ),
+            },
+        ...parent && actions.getList
+          ?
+            {
+              [stripped ? 'getAllIsLoading' : `getAll${functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
+              [stripped ? 'getAllError' : `getAll${functionPlural}Error`]: state[objectName].getAllError,
+            }
+          : {},
+      }
+    )}
+
   return {
-        mapToPropsStripped: (state, ownProps) => {
-          if (typeof ownProps !== 'object') {
-            throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
-          }
-          const parentFromProp = ownProps[parent];
-          // When the parent is an object, retrieve the parentKey by using parentId from the object
-          const parentKey = typeof(parentFromProp) === 'object' && parentFromProp !== null ? parentFromProp[parentId] : parentFromProp
-          return ({
-              // If the parent key is not specified in ownProps then it is assumed to be null
-              ...ownProps[parent] || ownProps[parent] === null
-                ? 
-                  // Return child state by parent
-                  state[objectName].list !== null && state[objectName].list[parentKey]
-                    ? mapToPropsStripped(state[objectName].list[parentKey], ownProps)
-                    : {}
-                :
-                  {
-                    // Return embedded list by [parent][key]
-                    [`list`]:
-                      state[objectName].list === null
-                        ? null
-                        : Object.fromEntries(
-                            Object.entries(state[objectName].list).map(
-                              ([parentKey, { list }]) => [parentKey, list]
-                            )
-                          ),
-                  },
-              ...parent && actions.getList
-                ?
-                  {
-                    getAllIsLoading: state[objectName].getAllIsLoading,
-                    getAllError: state[objectName].getAllError,
-                  }
-                : {},
-            }
-          )},
-        mapToProps: (state, ownProps) => {
-          if (typeof ownProps !== 'object') {
-            throw 'When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).'
-          }
-          const parentFromProp = ownProps[parent];
-          // When the parent is an object, retrieve the parentKey by using parentId from the object
-          const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
-          return ({
-              // If the parent key is not specified in ownProps then it is assumed to be null
-              ...ownProps[parent] || ownProps[parent] === null
-                ? 
-                  // Return child state by parent
-                  state[objectName].list !== null && state[objectName].list[parentKey]
-                    ? mapToProps(state[objectName].list[parentKey], ownProps)
-                    : {}
-                :
-                  {
-                    // Return embedded list by [parent][key]
-                    [`${objectName}List`]:
-                      state[objectName].list === null
-                        ? null
-                        : Object.fromEntries(
-                            Object.entries(state[objectName].list).map(
-                              ([parentKey, { list }]) => [parentKey, list]
-                            )
-                          ),
-                  },
-              ...parent && actions.getList
-                ?
-                  {
-                    [`getAll${functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
-                    [`getAll${functionPlural}Error`]: state[objectName].getAllError,
-                  }
-                : {},
-            }
-          )},
+    mapToProps: getMapToPropsWithParent(false),
+    mapToPropsStripped: getMapToPropsWithParent(true),
   };
 };

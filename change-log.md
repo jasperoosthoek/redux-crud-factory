@@ -46,3 +46,7 @@
 
 ##### Version 0.1.9
 - Initial `list` object is now `null` instead of empty object when `parent` is defined
+
+##### Version 0.2.0
+- Include `hooks` and `hooksStripped` object which perform the same as redux `connect`
+- Combine `mapToProps` and `mapToPropsStripped` to a single function because it is more DRY
