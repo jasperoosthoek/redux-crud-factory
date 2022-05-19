@@ -43,3 +43,6 @@
 
 ##### Version 0.1.8
 - Fix setting object getAll reducer when list === null in initial state 
+
+##### Version 0.1.9
+- Initial `list` object is now `null` instead of empty object when `parent` is defined

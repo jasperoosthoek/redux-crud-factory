@@ -3,7 +3,7 @@ import { arrayToObject } from './utils';
 import { formatFunctionNames } from './actionsFactory';
 
 const initialStateRoot = {
-  list: {},
+  list: null,
   getAllIsLoading: false,
   getAllError: null,
 };
@@ -237,14 +237,14 @@ export default (objectName, config = {}, actionTypes) => {
 
     const prevState = {
       ...state ? state : getInitialState(config),
-      list: {
-        ...state && state.list ? state.list : {},
-        ...(action.parent || action.parent === null) && subState !== null
+      list: (action.parent || action.parent === null) && subState !== null
           // Only update [parentKey] when subState is not null because this might otherwise be triggered by another
           // reducer with the same parent key
-          ? { [parentKey]: subState }
-          : {},
-      },
+          ? {
+              ...(state || {}).list || {},
+              [parentKey]: subState,
+            }
+          : state ? state.list : null
     }
 
     switch (action.type) {
@@ -261,10 +261,7 @@ export default (objectName, config = {}, actionTypes) => {
           getAllError: action.payload || null,
         };
       case actionTypes.clearAll:
-        return {
-          ...initialStateRoot,
-          list: { },
-        }
+        return initialStateRoot;
       case actionTypes.setAll:
         const obj = {};
         action.payload.map((o) => {
@@ -297,7 +294,7 @@ export default (objectName, config = {}, actionTypes) => {
           return {
             ...prevState,
             list: {
-              ...prevState.list,
+              ...prevState.list || {},
               [action.payload[id]]: getInitialState(config),
             }
           }

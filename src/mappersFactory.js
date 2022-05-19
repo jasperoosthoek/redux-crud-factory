@@ -160,18 +160,20 @@ export const getMapToProps = (objectName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  state[objectName].list[parentKey]
+                  state[objectName].list !== null && state[objectName].list[parentKey]
                     ? mapToPropsStripped(state[objectName].list[parentKey], ownProps)
                     : {}
                 :
                   {
                     // Return embedded list by [parent][key]
-                    [`list`]: 
-                      Object.fromEntries(
-                        Object.entries(state[objectName].list).map(
-                          ([parentKey, { list }]) => [parentKey, list]
-                        )
-                      ),
+                    [`list`]:
+                      state[objectName].list === null
+                        ? null
+                        : Object.fromEntries(
+                            Object.entries(state[objectName].list).map(
+                              ([parentKey, { list }]) => [parentKey, list]
+                            )
+                          ),
                   },
               ...parent && actions.getList
                 ?
@@ -194,18 +196,20 @@ export const getMapToProps = (objectName, config) => {
               ...ownProps[parent] || ownProps[parent] === null
                 ? 
                   // Return child state by parent
-                  state[objectName].list[parentKey]
+                  state[objectName].list !== null && state[objectName].list[parentKey]
                     ? mapToProps(state[objectName].list[parentKey], ownProps)
                     : {}
                 :
                   {
                     // Return embedded list by [parent][key]
-                    [`${objectName}List`]: 
-                      Object.fromEntries(
-                        Object.entries(state[objectName].list).map(
-                          ([parentKey, { list }]) => [parentKey, list]
-                        )
-                      ),
+                    [`${objectName}List`]:
+                      state[objectName].list === null
+                        ? null
+                        : Object.fromEntries(
+                            Object.entries(state[objectName].list).map(
+                              ([parentKey, { list }]) => [parentKey, list]
+                            )
+                          ),
                   },
               ...parent && actions.getList
                 ?
