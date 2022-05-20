@@ -220,7 +220,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   const { functionSingle, functionPlural } = formatFunctionNames(objectName);
   const { actionSingle, actionPlural } = formatActionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
-  console.log({ actionTypes})
 
   
   const getParentObj = (obj) => {

@@ -55,4 +55,3 @@
 - Turn off `select` in default config and turn on `getAll` action when parent is set
 - New `parseIdToInt` and `parseParentToInt` option to allow for string to be used as integer id
 - Test for allowed props in hooks
-

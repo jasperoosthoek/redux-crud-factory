@@ -52,107 +52,72 @@ export default (objectName, config) => {
       : {}
   })
   
-  const mapToPropsStripped = (state = {}, ownProps = {}) => ({
+  const actionsStrippedToFullName = {
     ...actions.get
-      ?
-        {
-          getIsLoading: state.getIsLoading,
-          getError: state.getError,
-        }
+      ? { get: `get${functionSingle}` }
       : {},
     ...actions.create
-      ?
-        {
-          createIsLoading: state.createIsLoading,
-          createError: state.createError,
-        }
+      ? { create: `create${functionSingle}` }
       : {},
     ...actions.update
-      ?
-        {
-          updateIsLoading: state.updateIsLoading,
-          updateError: state.updateError,
-        }
+      ? { update: `update${functionSingle}` }
       : {},
     ...actions.delete
-      ?
-        {
-          deleteIsLoading: state.deleteIsLoading,
-          deleteError: state.deleteError,
-        }
+      ? { delete: `delete${functionSingle}` }
       : {},
     ...actions.getList
-      ?
-        {
-          list: state.list,
-          getListIsLoading: state.getListIsLoading,
-          getListError: state.getListError,
-        }
+      ? { getList: `get${functionPlural}List` }
       : {},
-    ...actions.select === 'single'
-      ?
-        {
-          [`selected${camelCaseId}`]: state[selectedId],
-          selected: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
-        }
-      : {},
-    ...propsIncluded(state),
-    ...singleObjectByIdProp(state, ownProps),
-  });
-  const mapToProps = (state = {}, ownProps = {}) => ({
-    ...actions.get
-      ?
-        {
-          [`get${functionSingle}IsLoading`]: state.getIsLoading,
-          [`get${functionSingle}Error`]: state.getError,
-        }
-      : {},
-    ...actions.create
-      ?
-        {
-          [`create${functionSingle}IsLoading`]: state.createIsLoading,
-          [`create${functionSingle}Error`]: state.createError,
-        }
-      : {},
-    ...actions.update
-      ?
-        {
-          [`update${functionSingle}IsLoading`]: state.updateIsLoading,
-          [`update${functionSingle}Error`]: state.updateError,
-        }
-      : {},
-    ...actions.delete
-      ?
-        {
-          [`delete${functionSingle}IsLoading`]: state.deleteIsLoading,
-          [`delete${functionSingle}Error`]: state.deleteError,
-        }
-      : {},
-    ...actions.getList
-      ?
-        // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
-        {
-          [`${objectName}List`]: state.list,
-          [`get${functionPlural}ListIsLoading`]: state.getListIsLoading,
-          [`get${functionPlural}ListError`]: state.getListError,
-        }
-      : {},
-    ...actions.select === 'single'
-      ?
-        {
-          [`selected${functionSingle}${camelCaseId}`]: state[selectedId],
-          [`selected${functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
-        }
-      : {},
-    ...propsIncluded(state),
-    ...singleObjectByIdProp(state, ownProps),
-  });
+    ...Object.entries(includeActions).reduce((o, [action, { isAsync }]) => ({
+      ...o,
+      ...isAsync
+        ? { [action]: action }
+        : {},
+    }), {}),
+  };
+
+  const getMapToProps = stripped => (state = {}, ownProps = {}) => {
+    const fs = stripped ? '' : functionSingle;
+    const fp = stripped ? '' : functionPlural;
+    return (
+      {
+        ...Object.entries(actionsStrippedToFullName).reduce(
+          (o, [ strippedName, fullName]) => {
+            const name = stripped ? strippedName : fullName;
+            // console.log(stripped, {strippedName,  fullName},`${name}IsLoading`,{ o }, { state })
+            return (
+              {
+                ...o,
+                [`${name}IsLoading`]: state[`${strippedName}IsLoading`],
+                [`${name}Error`]: state[`${strippedName}Error`],
+              }
+            )}, {}),
+        ...actions.getList
+          ?
+            // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
+            {
+              [stripped ? 'list' : `${objectName}List`]: state.list,
+            }
+          : {},
+        ...actions.select === 'single'
+          ?
+          {
+            [`selected${stripped ? '' : functionSingle}${camelCaseId}`]: state[selectedId],
+            [`selected${stripped ? '' : functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
+          }
+          : {},
+        ...propsIncluded(state),
+        ...singleObjectByIdProp(state, ownProps),
+      }
+    );
+  };
 
   if (!parent) {
     // This is the default mapper
     return {
-      mapToPropsStripped: (state, ownProps) => mapToPropsStripped(state[objectName], ownProps),
-      mapToProps: (state, ownProps) => mapToProps(state[objectName], ownProps),
+      actionsStrippedToFullName,
+      mapToProps: (state, ownProps) => getMapToProps(false)(state[objectName], ownProps),
+      mapToPropsStripped: (state, ownProps) => getMapToProps(true)(state[objectName], ownProps),
     };
   }
 
@@ -171,9 +136,7 @@ export default (objectName, config) => {
             // Return child state by parent
             state[objectName].list !== null && state[objectName].list[parentKey]
               ? (
-                stripped
-                  ? mapToPropsStripped(state[objectName].list[parentKey], ownProps)
-                  : mapToProps(state[objectName].list[parentKey], ownProps)
+                getMapToProps(stripped)(state[objectName].list[parentKey], ownProps)
               )
               : {}
           :
@@ -191,14 +154,23 @@ export default (objectName, config) => {
         ...parent && actions.getList
           ?
             {
-              [stripped ? 'getAllIsLoading' : `getAll${functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
-              [stripped ? 'getAllError' : `getAll${functionPlural}Error`]: state[objectName].getAllError,
+              [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
+              [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAllError,
             }
           : {},
       }
     )}
 
   return {
+    actionsStrippedToFullName: {
+      ...actionsStrippedToFullName,
+      ...actions.getAll
+        ? {
+            getAll: `getAll${functionPlural}`,
+            clearAll: `clearAll${functionPlural}`,
+          }
+        : {},
+    },
     mapToProps: getMapToPropsWithParent(false),
     mapToPropsStripped: getMapToPropsWithParent(true),
   };
