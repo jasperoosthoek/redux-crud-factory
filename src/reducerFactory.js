@@ -1,6 +1,5 @@
 
-import { arrayToObject } from './utils';
-import { formatFunctionNames } from './actionsFactory';
+import { arrayToObject, titleCase } from './utils';
 
 const initialStateRoot = {
   list: null,
@@ -14,11 +13,11 @@ const getAsyncInitialState = action => ({
 })
 
 const getInitialState = ({
-  includeProps,
-  select,
   selectedId,
+  selectedIds,
   actions,
   includeActions,
+  includeProps,
 }) => ({
   list: null,
   ...getAsyncInitialState('getList'),
@@ -28,6 +27,8 @@ const getInitialState = ({
   ...actions.update ? getAsyncInitialState('update') : {},
   ...actions.select === 'single'
     ? { [selectedId]: null }
+    : actions.select === 'multiple'
+    ? { [selectedIds]: new Set() }
     : {},
   ...includeProps,
   ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
@@ -42,14 +43,15 @@ const getSubReducer = (objectName, config, actionTypes) => {
     id,
     byKey,
     includeProps,
-    select,
     selectedId,
+    selectedIds,
     actions,
     includeActions,
   } = config;
 
   return (state, action) => {
     const prevState = state || getInitialState(config);
+    const selectedIdsNew = selectedIds && prevState[selectedIds]
 
     for (let [act, { isAsync }] of Object.entries(includeActions).filter(([dummy, { isAsync }]) => isAsync)) {
       let actionIsLoading = `${act}IsLoading`;
@@ -71,16 +73,40 @@ const getSubReducer = (objectName, config, actionTypes) => {
           };
       }
     }
+    for (let [propName, initialValue] of Object.entries(includeProps)) {
+      const propNameTitleCase = titleCase(propName);
+      switch (action.type) {
+        case actionTypes[`set${propNameTitleCase}`]:
+          return {
+            ...prevState,
+            [propName]: action.payload,
+          };
+        case actionTypes[`clear${propNameTitleCase}`]:
+          return {
+            ...prevState,
+            [propName]: initialValue,
+          };
+      }
+    }
     switch (action.type) {
       case actionTypes.setList:
         let list = arrayToObject(action.payload, byKey);
+        if (actions.select === 'multiple' && selectedIdsNew.length !== 0) {
+          selectedIdsNew.forEach(id => {
+            if (!list[id]) selectedIdsNew.delete(id);
+          });
+        }
+
         return {
           ...prevState,
           list,
-          // Reset selected value when it is selected in the previous state but it no longer exists in the
-          // new state. Do not touch selected value when it still exists in the new state.
           ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
+            // Reset selected value when it is selected in the previous state but it no longer exists in the
+            // new state. Do not touch selected value when it still exists in the new state.
             ? { [selectedId]: null }
+            : actions.select === 'multiple'
+            // Do something similar for multiple selections: Remove selected ids that no longer exist in the new list
+            ? { [selectedIds]: selectedIdsNew }
             : {},
           getListIsLoading: false,
           getListError: null,
@@ -159,6 +185,9 @@ const getSubReducer = (objectName, config, actionTypes) => {
         };
       case actionTypes.delete:
         const newList = { ...(prevState || {}).list };
+        if (actions.select === 'multiple') {
+          selectedIdsNew.delete(action.payload[byKey]);
+        }
         if (newList[action.payload[byKey]]) {
           delete newList[action.payload[byKey]];
         }
@@ -167,6 +196,10 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...actions.select === 'single'
             ? {
                 [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
+              }
+            : actions.select === 'multiple'
+            ? {
+                [selectedIds]: selectedIdsNew,
               }
             : {},
           list: newList,
@@ -189,14 +222,21 @@ const getSubReducer = (objectName, config, actionTypes) => {
         return {
           ...prevState,
           ...actions.select === 'single'
-            ? { [selectedId]: action.payload[byKey] }
+            ? { [selectedId]: typeof action.payload === 'object' ? action.payload[byKey] : action.payload}
+            : actions.select === 'multiple'
+            ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
             : {},
         };
       case actionTypes.unSelect:
+        if (actions.select === 'multiple') {
+          selectedIdsNew.delete(typeof action.payload === 'object' ? action.payload[byKey] : action.payload)
+        }
         return {
           ...prevState,
           ...actions.select === 'single'
             ? { [selectedId]: null }
+            : actions.select === 'multiple'
+            ? { [selectedIds]: selectedIdsNew }
             : {},
         };
       case actionTypes.clearList:

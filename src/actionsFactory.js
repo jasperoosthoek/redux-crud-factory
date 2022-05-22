@@ -1,5 +1,5 @@
 
-import { callIfFunc, camelToSnakeCase, snakeToCamelCase, toUpperCamelCase, pluralToSingle } from './utils';
+import { callIfFunc, camelToSnakeCase, snakeToCamelCase, toUpperCamelCase, pluralToSingle, titleCase } from './utils';
 
 const IS_LOADING = 'IS_LOADING';
 const ERROR = 'ERROR';
@@ -47,13 +47,29 @@ const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
     [`${func}ClearError`]: `${action}_${CLEAR_ERROR}`,
   };
 }
-const formatActionNames = objectName => {
+
+const getActionTypesFromPropName = (propName) => {
+  const propNameUpperSnakeCase = camelToSnakeCase(propName).toUpperCase()
+  return (
+    {
+      [`set${titleCase(propName)}`]: `${SET}_${propNameUpperSnakeCase}`,
+      [`clear${titleCase(propName)}`]: `${CLEAR}_${propNameUpperSnakeCase}`,
+    }
+  );
+};
+
+export const formatActionAndFunctionNames = objectName => {
+  // Turn "upperCamelCaseName" into UpperCamelCaseName
+  const upperCamelCaseName = titleCase(objectName);
   const actionPlural = camelToSnakeCase(objectName).toUpperCase();
   return {
+    functionSingle: pluralToSingle(upperCamelCaseName),
+    functionPlural: upperCamelCaseName,
+    camelCaseNameSingle: pluralToSingle(objectName),
     actionPlural,
     actionSingle: pluralToSingle(actionPlural),
   };
-}
+};
 
 const formatActionTypes = (objectName, config) => {
   const {
@@ -62,8 +78,9 @@ const formatActionTypes = (objectName, config) => {
     parent,
     actions,
     includeActions,
+    includeProps,
   } = config;
-  const { actionSingle, actionPlural } = formatActionNames(objectName);
+  const { actionSingle, actionPlural } = formatActionAndFunctionNames(objectName);
   
   if (typeof actionTypeStyle == 'function') {
     return {
@@ -175,20 +192,16 @@ const formatActionTypes = (objectName, config) => {
         }),
         {}
     ),
+    ...Object.keys(includeProps)
+      .reduce((obj, propName) => 
+        ({
+          ...obj,
+          ...getActionTypesFromPropName(propName),
+        }),
+        {}
+    ),
   };
 }
-
-export const actionTypes = formatActionTypes;
-
-export const formatFunctionNames = (objectName) => {
-  // Turn "upperCamelCaseName" into UpperCamelCaseName
-  const upperCamelCaseName = objectName.charAt(0).toUpperCase() + objectName.slice(1);
-  return {
-    functionSingle: pluralToSingle(upperCamelCaseName),
-    functionPlural: upperCamelCaseName,
-    camelCaseNameSingle: pluralToSingle(objectName),
-  };
-};
 
 // Convert a list route, e.g '/api/foo' into a detail route '/api/foo/42'
 // Note that trailing slashes are handled automatically: '/api/foo/' becomes '/api/foo/42/'
@@ -216,9 +229,9 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     byKey,
     actions,
     includeActions,
+    includeProps,
   } = config;
-  const { functionSingle, functionPlural } = formatFunctionNames(objectName);
-  const { actionSingle, actionPlural } = formatActionNames(objectName);
+  const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
 
   
@@ -254,36 +267,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ? { data: typeof prepare === 'function' ? prepare(obj, { args, getState, params }) : obj }
       : {},
   });
-
-  // const _asyncAction = (obj, { params = {}, callback, onError: callerOnError, axiosConfig } = {}, action ) => async (dispatch, getState) => {
-  //   const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions[action];
-
-  //   dispatch({ type: actionTypes[`${action}IsLoading`], ...getParentObj(obj ? obj : params, parent) });
-  //   try {
-  //     const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
-  //     const responseAction = (
-  //       action === 'get' || action === 'create'
-  //       ? 'set'
-  //       : action === 'getList'
-  //       ? 'setList'
-  //       : action === 'getAll'
-  //       ? 'setAll'
-  //       : action
-  //     )
-  //     dispatch({
-  //       type: actionTypes[responseAction],
-  //       payload: response.data,
-  //       ...getParentObj(response.data),
-  //     });
-  //     callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
-  //     callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
-  //   } catch (error) {
-  //     dispatch({ type: actionTypes.getError, payload: error });
-  //     callIfFunc(globalOnError, error);
-  //     callIfFunc(actionOnError, error);
-  //     callIfFunc(callerOnError, error);
-  //   };
-  // }
   
   // Each callback or onResponse function will get the actions of all factories (getFooList(), createBar() etc) and also 
   // the stripped actions (setList(), create() etc) of this particular factory. This allows callbacks to trigger specific actions (createFoo()) and
@@ -468,17 +451,17 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callerOnError, error);
       };
     },
-    clearAll: (obj) => dispatch => dispatch({
+    clearAll: () => dispatch => dispatch({
       type: actionTypes.clearAll,
     }),
-    select: obj => (dispatch) => {
-      dispatch({
+    select: obj => (dispatch) => dispatch({
         type: actionTypes.select,
         payload: obj,
         ...getParentObj(obj),
-      })},
-    unSelect: () => (dispatch, ownProps) => dispatch({
+      }),
+    unSelect: obj => (dispatch, ownProps) => dispatch({
       type: actionTypes.unSelect,
+      ...actions.select === 'multiple' ? { payload: obj } : {},
       ...getParentObj(ownProps),
     }),
     selectAll: obj => (dispatch, ownProps) => dispatch({
@@ -493,7 +476,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     }),
   };
 
-  const actionsIncluded = Object.entries(includeActions)
+  const asyncActionsIncluded = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError, axiosConfig }]) =>
       ({
@@ -507,10 +490,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                       ? customParent(obj, { args, getState, params })
                       : customParent
                   };
-            
-            // if (getFromState(getState, `${action}IsLoading`)) {
-            //   return;
-            // }
             dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
 
             try {
@@ -541,16 +520,46 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       }),
       {}
     );
+  const syncActionsIncluded = Object.entries(includeProps).reduce(
+    (o, [propName]) => {
+      const { functionSingle } = formatActionAndFunctionNames(propName);
+      const actionTypes = getActionTypesFromPropName(propName)
+      return (
+        {
+          ...o,
+          [`set${functionSingle}`]:
+            newValue => dispatch => dispatch({
+              type: actionTypes[`set${functionSingle}`],
+              payload: newValue,
+            }),
+          [`clear${functionSingle}`]:
+            newValue => dispatch => dispatch({
+              type: actionTypes[`clear${functionSingle}`],
+              payload: newValue,
+            }),
+        }
+      );
+    }, {});
   
-  const actionsList = [
-      ...actions.get ? ['get', 'set'] : [],
-      ...actions.getList ? ['getList', 'setList', 'clearList'] : [],
-      ...actions.create ? ['create', 'set'] : [],
+  const asyncActionsList = [
+      ...actions.get ? ['get'] : [],
+      ...actions.getList ? ['getList'] : [],
+      ...actions.create ? ['create'] : [],
       ...actions.update ? ['update'] : [],
       ...actions.delete ? ['delete'] : [],
-      ...parent && actions.getAll ? ['getAll', 'setAll', 'clearAll'] : [],
-      ...actions.select === 'single' ? ['select', 'unSelect'] : [],
-      ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
+      ...parent && actions.getAll ? ['getAll'] : [],
+      ...Object.keys(includeActions),
+  ];
+  const syncActionsList = [
+    ...actions.get ? ['set'] : [],
+    ...actions.getList ? ['setList', 'clearList'] : [],
+    ...actions.create ? ['set'] : [],
+    ...actions.select ? ['select', 'unSelect'] : [],
+    ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
+    ...parent && actions.getAll ? ['setAll', 'clearAll'] : [],
+    ...Object.keys(includeProps).reduce((o, propName) =>
+      [ ...o, `set${titleCase(propName)}`, `clear${titleCase(propName)}`], []
+    )
   ];
 
   const mapActions = {
@@ -571,29 +580,50 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     selectAll: `selectAll${functionPlural}`,
     unSelectAll: `unSelectAll${functionPlural}`,
   }
+
+  const asyncActionsStripped = asyncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})
+  const syncActionsStripped = syncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})
+
+  const asyncActions = asyncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {});
+  const syncActions = syncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {});
+  
   const returnObj = {
+    mapActions,
     actionsStripped: {
-      ...actionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
-      ...actionsIncluded,
+      ...asyncActionsStripped,
+      ...syncActionsStripped,
+      ...asyncActionsIncluded,
+      ...syncActionsIncluded,
     },
+    asyncActions,
+    syncActions,
+    asyncActionsStripped,
+    syncActionsStripped,
+    asyncActionsIncluded,
+    syncActionsIncluded,
+    actionTypes,
     actions: {
-      ...actionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
-      ...actionsIncluded,
+      ...asyncActions,
+      ...syncActions,
+      ...asyncActionsIncluded,
+      ...syncActionsIncluded,
     },
   }
 
   
+  const actionsList = asyncActionsList.concat(syncActionsList);
   // actionDispatchers and actionDispatchersStripped are created after the actionFunctions are created and returned to caller.
   // There, actionDispatchers of all factories are combined and can be obtained using:
   // getAllActionDispatchers(dispatch) to obtain the full name actions (e.g. getFooList) of all factories
   // getActionDispatchersStripped(dispatch) to obtain the stripped actions (getList) of only this factory
   const actionDispatchers = dispatch => Object.fromEntries(
     actionsList.map(action => [
-      mapActions[action],
+      mapActions[action] || action,
       (...args) => dispatch(actionFunctions[action](...args)),
-      ])
+    ])
   );
-  const actionDispatchersStripped = (dispatch) => Object.fromEntries(
+  console.log({ actionDispatchers: actionDispatchers('foo')})
+  const actionDispatchersStripped = dispatch => Object.fromEntries(
     actionsList.map(action => [
       action,
       (...args) => dispatch(actionFunctions[action](...args)),

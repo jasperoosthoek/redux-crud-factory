@@ -58,3 +58,9 @@
 
 ##### Version 0.2.2
 - Refactor hooks so dispatchable action functions have `isLoading` and `error` key
+
+##### Version 0.2.3
+- Greatly improve `actions` and `hooks`
+- Fix not adding `includeActions` to `actionDispatchers`
+- New `set` and `clear` functions for `includeProps`
+- `select === 'multiple'` now works

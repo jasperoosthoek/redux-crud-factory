@@ -1,8 +1,8 @@
-import actionsFactory, { actionTypes, getDetailRoute } from './actionsFactory';
+import actionsFactory, { getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import hooksFactory from './hooksFactory';
 import mappersFactory from './mappersFactory';
-import { toUpperCamelCase } from './utils';
+import { toUpperCamelCase, singleToPlural } from './utils';
 
 
 const validateConfig = (config, defaultConfig) => {
@@ -12,7 +12,7 @@ const validateConfig = (config, defaultConfig) => {
     parseIdToInt = defaultConfig.parseIdToInt || false,
     // The key to sort by in the state
     byKey = defaultConfig.byKey || null,
-    includeProps = null,
+    includeProps = {},
     parent = null,
     parentId = defaultConfig.parentId || 'id',
     parseParentToInt = defaultConfig.parseParentToInt || false,
@@ -147,22 +147,26 @@ const validateConfig = (config, defaultConfig) => {
   };
   if (newConfig.actions.select === 'single') {
     newConfig.selectedId = `selected${toUpperCamelCase(id)}`
+  } else if (newConfig.actions.select === 'multiple') {
+    newConfig.selectedIds = `selected${singleToPlural(toUpperCamelCase(id))}`
   }
   return newConfig;
 }
 
 const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const config = validateConfig(cfg, defaultConfig);
-  const factory = {
-    actionTypes: actionTypes(objectName, config),
+  let factory = {
     ...actionsFactory({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }),
-    ...mappersFactory(objectName, config),
     config,
   };
+  factory = {
+    ...factory,
+    ...mappersFactory(objectName, config, factory),
+  }
   return {
     ...factory,
-    ...reducerFactory(objectName, config, factory),
     ...hooksFactory(objectName, config, factory),
+    ...reducerFactory(objectName, config, factory),
   }
 }
 

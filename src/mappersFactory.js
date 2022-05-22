@@ -1,7 +1,7 @@
-import { formatFunctionNames } from './actionsFactory';
-import { toUpperCamelCase, arrayToObject } from './utils';
+import { formatActionAndFunctionNames } from './actionsFactory';
+import { toUpperCamelCase, singleToPlural } from './utils';
 
-export default (objectName, config) => {
+export default (objectName, config, { mapActions }) => {
   const {
     id,
     byKey,
@@ -10,15 +10,17 @@ export default (objectName, config) => {
     includeProps,
     select,
     selectedId,
+    selectedIds,
     actions,
     includeActions,
     parseIdToInt,
     parseParentToInt,
   } = config;
-  const { functionSingle, functionPlural, camelCaseNameSingle } = formatFunctionNames(objectName);
+  const { functionSingle, functionPlural, camelCaseNameSingle } = formatActionAndFunctionNames(objectName);
   const camelCaseId = toUpperCamelCase(byKey);
+  const camelCaseIdPlural = singleToPlural(camelCaseId);
   
-  const propsIncluded = (state) => ({
+  const mapIncludePropsAndActions = (state) => ({
     ...includeProps
       ?
         Object.keys(includeProps).reduce((obj, propName) => ({
@@ -54,19 +56,19 @@ export default (objectName, config) => {
   
   const actionsStrippedToFullName = {
     ...actions.get
-      ? { get: `get${functionSingle}` }
+      ? { get: mapActions.get }
       : {},
     ...actions.create
-      ? { create: `create${functionSingle}` }
+      ? { create: mapActions.create }
       : {},
     ...actions.update
-      ? { update: `update${functionSingle}` }
+      ? { update: mapActions.update }
       : {},
     ...actions.delete
-      ? { delete: `delete${functionSingle}` }
+      ? { delete: mapActions.delete }
       : {},
     ...actions.getList
-      ? { getList: `get${functionPlural}List` }
+      ? { getList: mapActions.getList }
       : {},
     ...Object.entries(includeActions).reduce((o, [action, { isAsync }]) => ({
       ...o,
@@ -84,7 +86,6 @@ export default (objectName, config) => {
         ...Object.entries(actionsStrippedToFullName).reduce(
           (o, [ strippedName, fullName]) => {
             const name = stripped ? strippedName : fullName;
-            // console.log(stripped, {strippedName,  fullName},`${name}IsLoading`,{ o }, { state })
             return (
               {
                 ...o,
@@ -106,7 +107,19 @@ export default (objectName, config) => {
             [`selected${stripped ? '' : functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
           }
           : {},
-        ...propsIncluded(state),
+        ...actions.select === 'multiple'
+          ?
+          {
+            [`selected${stripped ? '' : functionSingle}${camelCaseIdPlural}`]: state[selectedIds],
+            [`selected${stripped ? '' : functionPlural}`]: 
+              state.list && state[selectedIds].length !== 0
+                ? Array.from(state[selectedIds])
+                    .map(id => state.list[id])
+                    .filter(obj => !!obj)
+                : [],
+          }
+          : {},
+        ...mapIncludePropsAndActions(state),
         ...singleObjectByIdProp(state, ownProps),
       }
     );
@@ -115,7 +128,6 @@ export default (objectName, config) => {
   if (!parent) {
     // This is the default mapper
     return {
-      actionsStrippedToFullName,
       mapToProps: (state, ownProps) => getMapToProps(false)(state[objectName], ownProps),
       mapToPropsStripped: (state, ownProps) => getMapToProps(true)(state[objectName], ownProps),
     };
@@ -162,15 +174,6 @@ export default (objectName, config) => {
     )}
 
   return {
-    actionsStrippedToFullName: {
-      ...actionsStrippedToFullName,
-      ...actions.getAll
-        ? {
-            getAll: `getAll${functionPlural}`,
-            clearAll: `clearAll${functionPlural}`,
-          }
-        : {},
-    },
     mapToProps: getMapToPropsWithParent(false),
     mapToPropsStripped: getMapToPropsWithParent(true),
   };
