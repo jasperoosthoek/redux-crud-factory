@@ -68,3 +68,6 @@
 ##### Version 0.2.4
 - Rename `includeProps` setting to `includeState`
 - Use `shallowEqual` in `useSelector` when reusing `mapToProps`
+- Fix: Not giving `list` as prop when `getList` action is false and `getAll` action is true and parent prop is given to the mapToProps/hooks
+- Synchronous redux action after `delete` is now called `clear`
+- Make `clear` action available so items can be easily removed in the state

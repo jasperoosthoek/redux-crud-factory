@@ -20,7 +20,7 @@ export default (objectName, config, { mapActions }) => {
   const camelCaseId = toUpperCamelCase(byKey);
   const camelCaseIdPlural = singleToPlural(camelCaseId);
   
-  const mapincludeStateAndActions = (state) => ({
+  const mapIncludeStateAndActions = (state) => ({
     ...includeState
       ?
         Object.keys(includeState).reduce((obj, propName) => ({
@@ -81,6 +81,7 @@ export default (objectName, config, { mapActions }) => {
   const getMapToProps = stripped => (state = {}, ownProps = {}) => {
     const fs = stripped ? '' : functionSingle;
     const fp = stripped ? '' : functionPlural;
+
     return (
       {
         ...Object.entries(actionsStrippedToFullName).reduce(
@@ -93,7 +94,7 @@ export default (objectName, config, { mapActions }) => {
                 [`${name}Error`]: state[`${strippedName}Error`],
               }
             )}, {}),
-        ...actions.getList
+        ...actions.getList || (actions.getAll && (!!ownProps[parent] || ownProps[parent] === null))
           ?
             // Default to empty object in case objects with parents get a parent prop that does not exist (yet) which is allowed.
             {
@@ -119,7 +120,7 @@ export default (objectName, config, { mapActions }) => {
                 : [],
           }
           : {},
-        ...mapincludeStateAndActions(state),
+        ...mapIncludeStateAndActions(state),
         ...singleObjectByIdProp(state, ownProps),
       }
     );
@@ -134,6 +135,7 @@ export default (objectName, config, { mapActions }) => {
   }
 
   const getMapToPropsWithParent = stripped => (state, ownProps) => {
+    
     if (typeof ownProps !== 'object') {
       console.error('When "parent" is defined, ownProps needs to be included too, i.e. mapToProps(state, ownProps).');
       return null;
@@ -143,10 +145,10 @@ export default (objectName, config, { mapActions }) => {
     const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
     return ({
         // If the parent key is not specified in ownProps then it is assumed to be null
-        ...ownProps[parent] || ownProps[parent] === null
+        ...!!ownProps[parent] || ownProps[parent] === null
           ? 
             // Return child state by parent
-            state[objectName].list !== null && state[objectName].list[parentKey]
+            state[objectName].list !== null && !!state[objectName].list[parentKey]
               ? (
                 getMapToProps(stripped)(state[objectName].list[parentKey], ownProps)
               )

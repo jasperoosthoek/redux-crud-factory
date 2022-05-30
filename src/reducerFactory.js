@@ -183,7 +183,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           createIsLoading: false,
           createError: action.payload || null,
         };
-      case actionTypes.delete:
+      case actionTypes.clear:
         const newList = { ...(prevState || {}).list };
         if (actions.select === 'multiple') {
           selectedIdsNew.delete(action.payload[byKey]);

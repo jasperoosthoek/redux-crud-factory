@@ -84,13 +84,14 @@ const formatActionTypes = (objectName, config) => {
   
   if (typeof actionTypeStyle == 'function') {
     return {
+      set: actionTypeStyle(SET),
+      clear: actionTypeStyle(CLEAR),
       ...actions.get
         ?
           {
             get: actionTypeStyle(GET),
             getIsLoading: actionTypeStyle(GET_IS_LOADING),
             getError: actionTypeStyle(GET_ERROR),
-            set: actionTypeStyle(SET),
           }
         : {},
       ...actions.create
@@ -153,6 +154,7 @@ const formatActionTypes = (objectName, config) => {
   }
   return {
     ...getActionTypes(SET, actionSingle),
+    ...getActionTypes(CLEAR, actionSingle),
     ...getActionTypes(SET, actionPlural, LIST),
     ...getActionTypes(CLEAR, actionPlural, LIST),
     ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
@@ -382,7 +384,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
           dispatch({
-            type: actionTypes.delete,
+            type: actionTypes.clear,
             payload: original,
             ...getParentObj(original, parent),
           });
@@ -417,7 +419,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.delete,
+          type: actionTypes.clear,
           payload: obj,
           ...getParentObj(obj),
         });
@@ -551,9 +553,9 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ...Object.keys(includeActions),
   ];
   const syncActionsList = [
-    ...actions.get ? ['set'] : [],
+    'set',
+    'clear',
     ...actions.getList ? ['setList', 'clearList'] : [],
-    ...actions.create ? ['set'] : [],
     ...actions.select ? ['select', 'unSelect'] : [],
     ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
     ...parent && actions.getAll ? ['setAll', 'clearAll'] : [],
