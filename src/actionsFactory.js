@@ -78,7 +78,7 @@ const formatActionTypes = (objectName, config) => {
     parent,
     actions,
     includeActions,
-    includeProps,
+    includeState,
   } = config;
   const { actionSingle, actionPlural } = formatActionAndFunctionNames(objectName);
   
@@ -192,7 +192,7 @@ const formatActionTypes = (objectName, config) => {
         }),
         {}
     ),
-    ...Object.keys(includeProps)
+    ...Object.keys(includeState)
       .reduce((obj, propName) => 
         ({
           ...obj,
@@ -229,7 +229,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     byKey,
     actions,
     includeActions,
-    includeProps,
+    includeState,
   } = config;
   const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
@@ -520,7 +520,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       }),
       {}
     );
-  const syncActionsIncluded = Object.entries(includeProps).reduce(
+  const syncActionsIncluded = Object.entries(includeState).reduce(
     (o, [propName]) => {
       const { functionSingle } = formatActionAndFunctionNames(propName);
       const actionTypes = getActionTypesFromPropName(propName)
@@ -557,7 +557,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     ...actions.select ? ['select', 'unSelect'] : [],
     ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
     ...parent && actions.getAll ? ['setAll', 'clearAll'] : [],
-    ...Object.keys(includeProps).reduce((o, propName) =>
+    ...Object.keys(includeState).reduce((o, propName) =>
       [ ...o, `set${titleCase(propName)}`, `clear${titleCase(propName)}`], []
     )
   ];
@@ -612,6 +612,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
 
   
   const actionsList = asyncActionsList.concat(syncActionsList);
+  
   // actionDispatchers and actionDispatchersStripped are created after the actionFunctions are created and returned to caller.
   // There, actionDispatchers of all factories are combined and can be obtained using:
   // getAllActionDispatchers(dispatch) to obtain the full name actions (e.g. getFooList) of all factories
@@ -622,7 +623,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       (...args) => dispatch(actionFunctions[action](...args)),
     ])
   );
-  console.log({ actionDispatchers: actionDispatchers('foo')})
   const actionDispatchersStripped = dispatch => Object.fromEntries(
     actionsList.map(action => [
       action,

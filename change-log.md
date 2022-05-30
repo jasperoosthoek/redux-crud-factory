@@ -64,3 +64,7 @@
 - Fix not adding `includeActions` to `actionDispatchers`
 - New `set` and `clear` functions for `includeProps`
 - `select === 'multiple'` now works
+
+##### Version 0.2.4
+- Rename `includeProps` setting to `includeState`
+- Use `shallowEqual` in `useSelector` when reusing `mapToProps`

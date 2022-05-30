@@ -7,7 +7,7 @@ export default (objectName, config, { mapActions }) => {
     byKey,
     parent,
     parentId,
-    includeProps,
+    includeState,
     select,
     selectedId,
     selectedIds,
@@ -20,10 +20,10 @@ export default (objectName, config, { mapActions }) => {
   const camelCaseId = toUpperCamelCase(byKey);
   const camelCaseIdPlural = singleToPlural(camelCaseId);
   
-  const mapIncludePropsAndActions = (state) => ({
-    ...includeProps
+  const mapincludeStateAndActions = (state) => ({
+    ...includeState
       ?
-        Object.keys(includeProps).reduce((obj, propName) => ({
+        Object.keys(includeState).reduce((obj, propName) => ({
             ...obj,
             [propName]: state[propName],
         }), {})
@@ -119,7 +119,7 @@ export default (objectName, config, { mapActions }) => {
                 : [],
           }
           : {},
-        ...mapIncludePropsAndActions(state),
+        ...mapincludeStateAndActions(state),
         ...singleObjectByIdProp(state, ownProps),
       }
     );

@@ -1,5 +1,5 @@
 
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 
 export default (objectName, { byKey, parent }, {
   mapToProps,
@@ -34,7 +34,8 @@ export default (objectName, { byKey, parent }, {
     const obj = useSelector(state => 
       stripped
         ? mapToPropsStripped(state, { ...idObj, ...parentObj })
-        : mapToProps(state, { ...idObj, ...parentObj })
+        : mapToProps(state, { ...idObj, ...parentObj }),
+      shallowEqual
     );
     const dispatch = useDispatch();
 
