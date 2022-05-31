@@ -332,6 +332,11 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       payload: obj,
       ...getParentObj(obj),
     }),
+    clear: (obj) => dispatch => dispatch({
+      type: actionTypes.clear,
+      payload: obj,
+      ...getParentObj(obj),
+    }),
     setList: (obj) => dispatch => dispatch({
       type: actionTypes.setList,
       payload: obj,
@@ -567,6 +572,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   const mapActions = {
     get: `get${functionSingle}`,
     set: `set${functionSingle}`,
+    clear: `clear${functionSingle}`,
     getList: `get${functionPlural}List`,
     setList: `set${functionPlural}List`,
     clearList: `clear${functionPlural}List`,
