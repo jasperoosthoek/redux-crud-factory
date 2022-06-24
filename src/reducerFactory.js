@@ -1,4 +1,3 @@
-
 import { arrayToObject, titleCase } from './utils';
 
 const initialStateRoot = {
@@ -90,6 +89,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
     }
     switch (action.type) {
       case actionTypes.setList:
+        // To do: test for action.payload is undefined
         let list = arrayToObject(action.payload, byKey);
         if (actions.select === 'multiple' && selectedIdsNew.length !== 0) {
           selectedIdsNew.forEach(id => {

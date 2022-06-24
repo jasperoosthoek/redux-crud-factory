@@ -48,12 +48,13 @@ const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
   };
 }
 
-const getActionTypesFromPropName = (propName) => {
+const getActionTypesFromPropName = (propName, objectName) => {
   const propNameUpperSnakeCase = camelToSnakeCase(propName).toUpperCase()
+  const objectNameUpperSnakeCase = camelToSnakeCase(objectName).toUpperCase()
   return (
     {
-      [`set${titleCase(propName)}`]: `${SET}_${propNameUpperSnakeCase}`,
-      [`clear${titleCase(propName)}`]: `${CLEAR}_${propNameUpperSnakeCase}`,
+      [`set${titleCase(propName)}`]: `${SET}_${objectNameUpperSnakeCase}_${propNameUpperSnakeCase}`,
+      [`clear${titleCase(propName)}`]: `${CLEAR}_${objectNameUpperSnakeCase}_${propNameUpperSnakeCase}`,
     }
   );
 };
@@ -198,7 +199,7 @@ const formatActionTypes = (objectName, config) => {
       .reduce((obj, propName) => 
         ({
           ...obj,
-          ...getActionTypesFromPropName(propName),
+          ...getActionTypesFromPropName(propName, objectName),
         }),
         {}
     ),
@@ -235,7 +236,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   } = config;
   const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
-
   
   const getParentObj = (obj) => {
     // If parent is defined, the parent is taken from the obj. Otherwise an empty object ({}) is returned
@@ -295,6 +295,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+        return response.data
       } catch (error) {
         dispatch({ type: actionTypes.getError, payload: error });
         callIfFunc(globalOnError, error);
@@ -306,17 +307,30 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       if (getFromState(getState, 'getListIsLoading')) {
         return;
       }
-      const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getList;
+      const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
       dispatch({ type: actionTypes.getListIsLoading, ...getParentObj(params, parent) });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
+        const responseData = typeof prepareResponse === 'function'
+          ? prepareResponse(
+              response.data,
+              { 
+                args,
+                dispatch,
+                getState,
+                params,
+                ...combineActionDispatchers(dispatch),
+              }
+            )
+          : response.data;
         dispatch({
           type: actionTypes.setList,
-          payload: response.data,
+          payload: responseData,
           ...getParentObj(params),
         });
-        callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
-        callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+        callIfFunc(actionCallback, responseData, combineActionDispatchers(dispatch));
+        callIfFunc(callback, responseData, combineActionDispatchers(dispatch));
+        return responseData
       } catch (error) {
         dispatch({
           type: actionTypes.clearList,
@@ -366,6 +380,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+        return response.data
       } catch (error) {
         dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
@@ -404,6 +419,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+        return response.data
       } catch (error) {
         dispatch({
           type: actionTypes.updateError,
@@ -430,6 +446,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         });
         callIfFunc(actionCallback, combineActionDispatchers(dispatch));
         callIfFunc(callback, combineActionDispatchers(dispatch));
+        return true;
       } catch (error) {
         dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
@@ -451,6 +468,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+        return response.data
       } catch (error) {
         dispatch({ type: actionTypes.getAllError, payload: error });
         callIfFunc(globalOnError, error);
@@ -516,6 +534,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                 }
               );
               callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
+              return response.data;
             } catch (error) {
               dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });
               callIfFunc(globalOnError, error);
@@ -529,24 +548,24 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     );
   const syncActionsIncluded = Object.entries(includeState).reduce(
     (o, [propName]) => {
-      const { functionSingle } = formatActionAndFunctionNames(propName);
-      const actionTypes = getActionTypesFromPropName(propName)
+      const propNameTitleCase = titleCase(propName);
+      const actionTypes = getActionTypesFromPropName(propName, objectName)
       return (
         {
           ...o,
-          [`set${functionSingle}`]:
+          [`set${propNameTitleCase}`]:
             newValue => dispatch => dispatch({
-              type: actionTypes[`set${functionSingle}`],
+              type: actionTypes[`set${propNameTitleCase}`],
               payload: newValue,
             }),
-          [`clear${functionSingle}`]:
+          [`clear${propNameTitleCase}`]:
             newValue => dispatch => dispatch({
-              type: actionTypes[`clear${functionSingle}`],
+              type: actionTypes[`clear${propNameTitleCase}`],
               payload: newValue,
             }),
         }
       );
-    }, {});
+    }, {})
   
   const asyncActionsList = [
       ...actions.get ? ['get'] : [],
@@ -631,10 +650,12 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       (...args) => dispatch(actionFunctions[action](...args)),
     ])
   );
+
+  const allActionFunctions = { ...actionFunctions, ...asyncActionsIncluded, ...syncActionsIncluded };
   const actionDispatchersStripped = dispatch => Object.fromEntries(
     actionsList.map(action => [
       action,
-      (...args) => dispatch(actionFunctions[action](...args)),
+      (...args) => dispatch(allActionFunctions[action](...args)),
     ])
   );
 
