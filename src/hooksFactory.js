@@ -11,7 +11,11 @@ export default (objectName, { byKey, parent }, {
   asyncActionsIncluded,
   syncActionsIncluded,
 }) => {
-  const getUseFactory = stripped => ({ [byKey]: id, [parent]: parentId, ...restProps } = {}) => {
+  const getUseFactory = stripped => props => {
+    let { [byKey]: id, [parent]: parentId, ...restProps } = props || {};
+    if (['string', 'number', 'bigint'].includes(typeof props)) {
+      id = props;
+    }
     if (!parent && typeof parentId !== 'undefined') {
       console.error(
         `Unrecognised parent prop ${
