@@ -2,7 +2,7 @@ import actionsFactory, { getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import hooksFactory from './hooksFactory';
 import mappersFactory from './mappersFactory';
-import { toUpperCamelCase, singleToPlural } from './utils';
+import { toUpperCamelCase, singleToPlural, titleCase } from './utils';
 
 
 const validateConfig = (config, defaultConfig) => {
@@ -146,10 +146,11 @@ const validateConfig = (config, defaultConfig) => {
     route,
   };
   if (newConfig.actions.select === 'single') {
-    newConfig.selectedId = `selected${toUpperCamelCase(id)}`
+    newConfig.selectedId = `selected${titleCase(id)}`
   } else if (newConfig.actions.select === 'multiple') {
-    newConfig.selectedIds = `selected${singleToPlural(toUpperCamelCase(id))}`
+    newConfig.selectedIds = `selected${titleCase(singleToPlural(id))}`
   }
+  console.log(toUpperCamelCase(singleToPlural(id)))
   return newConfig;
 }
 

@@ -28,17 +28,17 @@ const getInitialState = ({
     ...actions.create ? getAsyncInitialState('create') : {},
     ...actions.delete ? getAsyncInitialState('delete') : {},
     ...actions.update ? getAsyncInitialState('update') : {},
-    ...actions.select === 'single'
-      ? { [selectedId]: null }
-      : actions.select === 'multiple'
-      ? { [selectedIds]: new Set() }
-      : {},
     ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
       ...obj,
       ...isAsync ? getAsyncInitialState(action) : {},
       ...initialState,
     }), {}),
   },
+  ...actions.select === 'single'
+    ? { [selectedId]: null }
+    : actions.select === 'multiple'
+    ? { [selectedIds]: new Set() }
+    : {},
   state: includeState,
 });
 
@@ -120,17 +120,17 @@ const getSubReducer = (objectName, config, actionTypes) => {
           list,
           actions: {
             ...prevActions,
-            ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
-              // Reset selected value when it is selected in the previous state but it no longer exists in the
-              // new state. Do not touch selected value when it still exists in the new state.
-              ? { [selectedId]: null }
-              : actions.select === 'multiple'
-              // Do something similar for multiple selections: Remove selected ids that no longer exist in the new list
-              ? { [selectedIds]: selectedIdsNew }
-              : {},
             getListIsLoading: false,
             getListError: null,
           },
+          ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
+            // Reset selected value when it is selected in the previous state but it no longer exists in the
+            // new state. Do not touch selected value when it still exists in the new state.
+            ? { [selectedId]: null }
+            : actions.select === 'multiple'
+            // Do something similar for multiple selections: Remove selected ids that no longer exist in the new list
+            ? { [selectedIds]: selectedIdsNew }
+            : {},
         };
       case actionTypes.getListIsLoading:
         return {
@@ -247,18 +247,18 @@ const getSubReducer = (objectName, config, actionTypes) => {
           list: newList,
           actions: {
             ...prevActions,
-            ...actions.select === 'single'
-              ? {
-                  [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
-                }
-              : actions.select === 'multiple'
-              ? {
-                  [selectedIds]: selectedIdsNew,
-                }
-              : {},
             deleteIsLoading: false,
             deleteError: null,
           },
+          ...actions.select === 'single'
+            ? {
+                [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
+              }
+            : actions.select === 'multiple'
+            ? {
+                [selectedIds]: selectedIdsNew,
+              }
+            : {},
         };
       case actionTypes.deleteIsLoading:
         return {
@@ -281,14 +281,11 @@ const getSubReducer = (objectName, config, actionTypes) => {
       case actionTypes.select:
         return {
           ...prevState,
-          actions: {
-            ...prevActions,
-            ...actions.select === 'single'
-              ? { [selectedId]: typeof action.payload === 'object' ? action.payload[byKey] : action.payload}
-              : actions.select === 'multiple'
-              ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
-              : {},
-          },
+          ...actions.select === 'single'
+            ? { [selectedId]: typeof action.payload === 'object' ? action.payload[byKey] : action.payload}
+            : actions.select === 'multiple'
+            ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
+            : {},
         };
       case actionTypes.unSelect:
         if (actions.select === 'multiple') {
@@ -296,14 +293,11 @@ const getSubReducer = (objectName, config, actionTypes) => {
         }
         return {
           ...prevState,
-          actions: {
-            ...prevActions,
-            ...actions.select === 'single'
-              ? { [selectedId]: null }
-              : actions.select === 'multiple'
-              ? { [selectedIds]: selectedIdsNew }
-              : {},
-          },
+          ...actions.select === 'single'
+            ? { [selectedId]: null }
+            : actions.select === 'multiple'
+            ? { [selectedIds]: selectedIdsNew }
+            : {},
         };
       case actionTypes.clearList:
         return getInitialState(config);

@@ -103,17 +103,17 @@ export default (objectName, config, { mapActions }) => {
         ...actions.select === 'single'
           ?
           {
-            [`selected${stripped ? '' : functionSingle}${camelCaseId}`]: state.actions[selectedId],
-            [`selected${stripped ? '' : functionSingle}`]: state.list && state.actions[selectedId] ? state.list[state[selectedId]] : null,
+            [`selected${stripped ? '' : functionSingle}${camelCaseId}`]: state[selectedId],
+            [`selected${stripped ? '' : functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
           }
           : {},
         ...actions.select === 'multiple'
           ?
           {
-            [`selected${stripped ? '' : functionSingle}${camelCaseIdPlural}`]: state.actions[selectedIds],
+            [`selected${stripped ? '' : functionSingle}${camelCaseIdPlural}`]: state[selectedIds],
             [`selected${stripped ? '' : functionPlural}`]: 
-              state.list && state.actions[selectedIds].length !== 0
-                ? Array.from(state.actions[selectedIds])
+              state.list && state[selectedIds].length !== 0
+                ? Array.from(state[selectedIds])
                     .map(id => state.list[id])
                     .filter(obj => !!obj)
                 : [],
