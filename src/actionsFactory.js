@@ -245,18 +245,18 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
   
-  const getFromState = (getState, key) => {
+  const getFromState = (getState, action, key) => {
     const state = getState()[objectName];
     if (typeof state === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" key" Initial state should include { ${objectName}: { ... } } object.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" action" Initial state should include { ${objectName}: { ... } } object.`;
     }
     if (typeof state !== 'object') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" key should have an object as value: { ${objectName}: { ... } }.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" action should have an object as value: { ${objectName}: { ... } }.`;
     }
-    if (typeof state.actions[key] === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${objectName}: { ${key}: ... } }`;
+    if (typeof state.actions[action] === 'undefined') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${action}": { ${objectName}: { ${action}: ... } }`;
     }
-    return state.actions[key];
+    return state.actions[action][key];
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions
@@ -304,7 +304,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     getList: ({ params = {}, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'getListIsLoading')) {
+      if (getFromState(getState, 'getList', 'isLoading')) {
         return;
       }
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
@@ -366,7 +366,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ...getParentObj(obj),
     }),
     create: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'createIsLoading')) {
+      // if (getFromState(getState, 'create', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.create;
@@ -389,7 +389,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     update: (obj, { original, callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'updateIsLoading')) {
+      // if (getFromState(getState, 'update', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.update;
@@ -432,7 +432,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     delete: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'deleteIsLoading')) {
+      // if (getFromState(getState, 'delete', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.delete;
@@ -455,7 +455,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     getAll : ({ callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'getAllIsLoading')) {
+      // if (getFromState(getState, 'getAll', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;

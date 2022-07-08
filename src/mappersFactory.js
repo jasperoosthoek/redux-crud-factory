@@ -31,8 +31,8 @@ export default (objectName, config, { mapActions }) => {
       ...obj,
       ...isAsync
         ? {
-            [`${action}IsLoading`]: state.actions[`${action}IsLoading`],
-            [`${action}Error`]: state.actions[`${action}Error`],
+            [`${action}IsLoading`]: state.actions[action].isLoading,
+            [`${action}Error`]: state.actions[action].error,
           }
         : {},
     }), {}),
@@ -89,8 +89,8 @@ export default (objectName, config, { mapActions }) => {
             return (
               {
                 ...o,
-                [`${name}IsLoading`]: state.actions[`${strippedName}IsLoading`],
-                [`${name}Error`]: state.actions[`${strippedName}Error`],
+                [`${name}IsLoading`]: state.actions[strippedName].isLoading,
+                [`${name}Error`]: state.actions[strippedName].error,
               }
             )}, {}),
         ...actions.getList || (actions.getAll && (!!ownProps[parent] || ownProps[parent] === null))
@@ -167,8 +167,8 @@ export default (objectName, config, { mapActions }) => {
         ...parent && actions.getList
           ?
             {
-              [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
-              [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAllError,
+              [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAll.isLoading,
+              [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAll.error,
             }
           : {},
       }

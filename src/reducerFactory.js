@@ -1,18 +1,17 @@
 import { arrayToObject, titleCase } from './utils';
 
+const getAsyncInitialState = action => ({
+  [action]: {
+    isLoading: false,
+    error: null,
+  },
+})
+
 const initialStateRoot = ({ includeState }) => ({
   list: null,
-  actions: {
-    getAllIsLoading: false,
-    getAllError: null,
-  },
+  actions: getAsyncInitialState('getAll'),
   state: includeState,
 });
-
-const getAsyncInitialState = action => ({
-  [`${action}IsLoading`]: false,
-  [`${action}Error`]: null,
-})
 
 const getInitialState = ({
   selectedId,
@@ -68,18 +67,24 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...prevState,
             actions: {
               ...prevActions,
-              [actionIsLoading]: isLoading,
-              ...isLoading ? { [actionError]: null } : {},
+              [act]: {
+                ...prevActions[act],
+                isLoading,
+                ...isLoading ? { error: null } : {},
+              },
             },
           };
         case actionTypes[actionError]:
-          let Error = action.payload ? action.payload : null;
+          let error = action.payload ? action.payload : null;
           return {
             ...prevState,
             actions: {
               ...prevActions,
-              [actionError]: Error,
-              ...Error ? { [actionIsLoading]: false } : {},
+              [act]: {
+                ...prevActions[act],
+                error,
+                ...error ? { isLoading: false } : {},
+              },
             },
           };
       }
@@ -105,6 +110,15 @@ const getSubReducer = (objectName, config, actionTypes) => {
           };
       }
     }
+    const setIsLoading = action => ({
+      isLoading: action.payload === false ? false : true,
+      error: null,
+    });
+    const setError = action => ({
+      isLoading: false,
+      error: action.payload || null,
+    });
+
     switch (action.type) {
       case actionTypes.setList:
         // To do: test for action.payload is undefined
@@ -120,8 +134,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           list,
           actions: {
             ...prevActions,
-            getListIsLoading: false,
-            getListError: null,
+            ...getAsyncInitialState('getList'),
           },
           ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
             // Reset selected value when it is selected in the previous state but it no longer exists in the
@@ -137,8 +150,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            getListIsLoading: action.payload === false ? false : true,
-            getListError: null,
+            getList: setIsLoading(action),
           },
         };
       case actionTypes.getListError:
@@ -146,8 +158,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            getListIsLoading: false,
-            getListError: action.payload || null,
+            getList: setError(action),
           },
         };
       case actionTypes.getIsLoading:
@@ -155,8 +166,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            getIsLoading: action.payload === false ? false : true,
-            getError: null,
+            get: setIsLoading(action),
           },
         };
       case actionTypes.getError:
@@ -164,8 +174,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            getIsLoading: false,
-            getError: action.payload || null,
+            get: setError(action),
           },
         };
       case actionTypes.set:
@@ -175,10 +184,8 @@ const getSubReducer = (objectName, config, actionTypes) => {
           actions: {
             ...prevActions,
             // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
-            getIsLoading: false,
-            getError: null,
-            createIsLoading: false,
-            createError: null,
+            ...getAsyncInitialState('get'),
+            ...getAsyncInitialState('clear'),
           },
         };
       case actionTypes.update:
@@ -194,8 +201,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           },
           actions: {
             ...prevActions,
-            updateError: null,
-            updateIsLoading: false,
+            ...getAsyncInitialState('update'),
           },
         };
         case actionTypes.updateIsLoading:
@@ -203,8 +209,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...prevState,
             actions: {
               ...prevActions,
-              updateIsLoading: action.payload === false ? false : true,
-              updateError: null,
+              update: setIsLoading(action),
             },
           };
         case actionTypes.updateError:
@@ -212,8 +217,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...prevState,
             actions: {
               ...prevActions,
-              updateIsLoading: false,
-              updateError: action.payload || null,
+              update: setError(action),
             },
           };
       case actionTypes.createIsLoading:
@@ -221,8 +225,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            createIsLoading: action.payload === false ? false : true,
-            createError: null,
+            create: setIsLoading(action),
           },
         };
       case actionTypes.createError:
@@ -230,8 +233,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            createIsLoading: false,
-            createError: action.payload || null,
+            create: setError(action),
           },
         };
       case actionTypes.clear:
@@ -247,8 +249,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           list: newList,
           actions: {
             ...prevActions,
-            deleteIsLoading: false,
-            deleteError: null,
+            ...getAsyncInitialState('delete'),
           },
           ...actions.select === 'single'
             ? {
@@ -265,8 +266,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            deleteIsLoading: action.payload === false ? false : true,
-            deleteError: null,
+            delete: setIsLoading(action),
           },
         };
       case actionTypes.deleteError:
@@ -274,8 +274,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
           ...prevState,
           actions: {
             ...prevActions,
-            deleteIsLoading: false,
-            deleteError: action.payload || null,
+            delete: setError(action),
           },
         };
       case actionTypes.select:
