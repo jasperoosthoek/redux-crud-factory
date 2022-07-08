@@ -83,8 +83,11 @@
 
 ##### Version 0.3.0
 - Refactor state, all loading and error state in separate `actions` object
+- Manage `state` in separate `state` object
+
+##### Upcoming
 - Add more `args` and `params` to loading state
 - Merge `includeActions` with `actions`
+- Move `config.actions.select` to `config.select`
 - Rename `config.includeState` to `config.state`
-- Manage `state` in separate `state` object
 - New `setState` action to overrides complete state or part of state similar to class based React components
