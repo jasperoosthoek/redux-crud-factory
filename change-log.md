@@ -80,3 +80,11 @@
 
 ##### Version 0.2.6
 - Hooks return single object when supplied with id as argument instead of only { id }
+
+##### Version 0.3.0
+- Refactor state, all loading and error state in separate `actions` object
+- Add more `args` and `params` to loading state
+- Merge `includeActions` with `actions`
+- Rename `config.includeState` to `config.state`
+- Manage `state` in separate `state` object
+- New `setState` action to overrides complete state or part of state similar to class based React components

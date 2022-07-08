@@ -29,7 +29,7 @@ const getInitialState = ({
     : actions.select === 'multiple'
     ? { [selectedIds]: new Set() }
     : {},
-  ...includeState,
+  state: includeState,
   ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
     ...obj,
     ...isAsync ? getAsyncInitialState(action) : {},
@@ -78,12 +78,18 @@ const getSubReducer = (objectName, config, actionTypes) => {
         case actionTypes[`set${propNameTitleCase}`]:
           return {
             ...prevState,
-            [propName]: action.payload,
+            state: {
+              ...prevState.state,
+              [propName]: action.payload,
+            },
           };
         case actionTypes[`clear${propNameTitleCase}`]:
           return {
             ...prevState,
-            [propName]: initialValue,
+            state: {
+              ...prevState.state,
+              [propName]: initialValue,
+            },
           };
       }
     }
@@ -252,7 +258,6 @@ export default (objectName, config = {}, { actionTypes }) => {
   const {
     id,
     byKey,
-    includeState,
     parent,
     recursive,
     selectedId,

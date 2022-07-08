@@ -22,10 +22,9 @@ export default (objectName, config, { mapActions }) => {
   
   const mapIncludeStateAndActions = (state) => ({
     ...includeState
-      ?
-        Object.keys(includeState).reduce((obj, propName) => ({
+      ? Object.keys(includeState).reduce((obj, propName) => ({
             ...obj,
-            [propName]: state[propName],
+            [propName]: state.state[propName],
         }), {})
       : {},
     ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
