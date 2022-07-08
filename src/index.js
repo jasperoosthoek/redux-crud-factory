@@ -150,7 +150,6 @@ const validateConfig = (config, defaultConfig) => {
   } else if (newConfig.actions.select === 'multiple') {
     newConfig.selectedIds = `selected${titleCase(singleToPlural(id))}`
   }
-  console.log(toUpperCamelCase(singleToPlural(id)))
   return newConfig;
 }
 

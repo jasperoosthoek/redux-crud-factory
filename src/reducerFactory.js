@@ -52,6 +52,15 @@ const getSubReducer = (objectName, config, actionTypes) => {
     includeActions,
   } = config;
 
+  const setIsLoading = action => ({
+    isLoading: action.payload === false ? false : true,
+    error: null,
+  });
+  const setError = action => ({
+    isLoading: false,
+    error: action.payload || null,
+  });
+  
   return (state, action) => {
     const prevState = state || getInitialState(config);
     const prevActions = prevState.actions;
@@ -61,20 +70,18 @@ const getSubReducer = (objectName, config, actionTypes) => {
       let actionIsLoading = `${act}IsLoading`;
       let actionError = `${act}Error`;
       switch (action.type) {
-        case actionTypes[actionIsLoading]:
-          let isLoading = action.payload === false ? false : true;
+        case actionTypes.includeActions[actionIsLoading]:
           return {
             ...prevState,
             actions: {
               ...prevActions,
               [act]: {
                 ...prevActions[act],
-                isLoading,
-                ...isLoading ? { error: null } : {},
+                ...setIsLoading(action),
               },
             },
           };
-        case actionTypes[actionError]:
+        case actionTypes.includeActions[actionError]:
           let error = action.payload ? action.payload : null;
           return {
             ...prevState,
@@ -82,8 +89,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
               ...prevActions,
               [act]: {
                 ...prevActions[act],
-                error,
-                ...error ? { isLoading: false } : {},
+                ...setError(action),
               },
             },
           };
@@ -92,7 +98,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
     for (let [propName, initialValue] of Object.entries(includeState)) {
       const propNameTitleCase = titleCase(propName);
       switch (action.type) {
-        case actionTypes[`set${propNameTitleCase}`]:
+        case actionTypes.includeState[`set${propNameTitleCase}`]:
           return {
             ...prevState,
             state: {
@@ -100,7 +106,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
               [propName]: action.payload,
             },
           };
-        case actionTypes[`clear${propNameTitleCase}`]:
+        case actionTypes.includeState[`clear${propNameTitleCase}`]:
           return {
             ...prevState,
             state: {
@@ -110,14 +116,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
           };
       }
     }
-    const setIsLoading = action => ({
-      isLoading: action.payload === false ? false : true,
-      error: null,
-    });
-    const setError = action => ({
-      isLoading: false,
-      error: action.payload || null,
-    });
 
     switch (action.type) {
       case actionTypes.setList:
@@ -315,6 +313,7 @@ export default (objectName, config = {}, { actionTypes }) => {
     recursive,
     selectedId,
   } = config;
+  console.log({ config, actionTypes })
 
   const subReducer = getSubReducer(objectName, config, actionTypes)
   const reducer = (state, action) => {
