@@ -253,10 +253,10 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     if (typeof state !== 'object') {
       throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" key should have an object as value: { ${objectName}: { ... } }.`;
     }
-    if (typeof state[key] === 'undefined') {
+    if (typeof state.actions[key] === 'undefined') {
       throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${objectName}: { ${key}: ... } }`;
     }
-    return state[key];
+    return state.actions[key];
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions

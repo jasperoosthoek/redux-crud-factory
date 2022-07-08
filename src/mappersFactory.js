@@ -31,8 +31,8 @@ export default (objectName, config, { mapActions }) => {
       ...obj,
       ...isAsync
         ? {
-            [`${action}IsLoading`]: state[`${action}IsLoading`],
-            [`${action}Error`]: state[`${action}Error`],
+            [`${action}IsLoading`]: state.actions[`${action}IsLoading`],
+            [`${action}Error`]: state.actions[`${action}Error`],
           }
         : {},
     }), {}),
@@ -89,8 +89,8 @@ export default (objectName, config, { mapActions }) => {
             return (
               {
                 ...o,
-                [`${name}IsLoading`]: state[`${strippedName}IsLoading`],
-                [`${name}Error`]: state[`${strippedName}Error`],
+                [`${name}IsLoading`]: state.actions[`${strippedName}IsLoading`],
+                [`${name}Error`]: state.actions[`${strippedName}Error`],
               }
             )}, {}),
         ...actions.getList || (actions.getAll && (!!ownProps[parent] || ownProps[parent] === null))
@@ -103,17 +103,17 @@ export default (objectName, config, { mapActions }) => {
         ...actions.select === 'single'
           ?
           {
-            [`selected${stripped ? '' : functionSingle}${camelCaseId}`]: state[selectedId],
-            [`selected${stripped ? '' : functionSingle}`]: state.list && state[selectedId] ? state.list[state[selectedId]] : null,
+            [`selected${stripped ? '' : functionSingle}${camelCaseId}`]: state.actions[selectedId],
+            [`selected${stripped ? '' : functionSingle}`]: state.list && state.actions[selectedId] ? state.list[state[selectedId]] : null,
           }
           : {},
         ...actions.select === 'multiple'
           ?
           {
-            [`selected${stripped ? '' : functionSingle}${camelCaseIdPlural}`]: state[selectedIds],
+            [`selected${stripped ? '' : functionSingle}${camelCaseIdPlural}`]: state.actions[selectedIds],
             [`selected${stripped ? '' : functionPlural}`]: 
-              state.list && state[selectedIds].length !== 0
-                ? Array.from(state[selectedIds])
+              state.list && state.actions[selectedIds].length !== 0
+                ? Array.from(state.actions[selectedIds])
                     .map(id => state.list[id])
                     .filter(obj => !!obj)
                 : [],
