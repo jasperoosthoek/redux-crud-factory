@@ -84,10 +84,13 @@
 ##### Version 0.3.0
 - Refactor state, all loading and error state in separate `actions` object
 - Manage `state` in separate `state` object
+- Refactor `actionTypes` from plain object to nested object with sub types
+- Simplify `reducerFactory` by handling all `isLoading`, `error` and `clearError` action sub types at once
 
 ##### Upcoming
 - Add more `args` and `params` to loading state
 - Merge `includeActions` with `actions`
 - Move `config.actions.select` to `config.select`
-- Rename `config.includeState` to `config.state`
 - New `setState` action to overrides complete state or part of state similar to class based React components
+- New `clearState` action to reset state to initial state
+- Rename `config.includeState` to `config.state`
