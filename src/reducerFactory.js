@@ -41,6 +41,44 @@ const getInitialState = ({
   state: includeState,
 });
 
+// Single function handles all isLoading and error actions in state.
+// This is DRY and can be easily extended
+const setIsLoading = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: action.payload === false ? false : true,
+      error: null,
+    },
+  },
+});
+
+const setError = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: false,
+      error: action.payload || null,
+    },
+  },
+});
+
+const setClearError = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: false,
+      error: null,
+    },
+  },
+});
+
 const getSubReducer = (objectName, config, actionTypes) => {
   const {
     id,
@@ -51,50 +89,30 @@ const getSubReducer = (objectName, config, actionTypes) => {
     actions,
     includeActions,
   } = config;
-
-  const setIsLoading = action => ({
-    isLoading: action.payload === false ? false : true,
-    error: null,
-  });
-  const setError = action => ({
-    isLoading: false,
-    error: action.payload || null,
-  });
   
   return (state, action) => {
     const prevState = state || getInitialState(config);
     const prevActions = prevState.actions;
     const selectedIdsNew = selectedIds && prevState[selectedIds]
 
-    for (let [act, { isAsync }] of Object.entries(includeActions).filter(([dummy, { isAsync }]) => isAsync)) {
-      let actionIsLoading = `${act}IsLoading`;
-      let actionError = `${act}Error`;
-      switch (action.type) {
-        case actionTypes.includeActions[actionIsLoading]:
-          return {
-            ...prevState,
-            actions: {
-              ...prevActions,
-              [act]: {
-                ...prevActions[act],
-                ...setIsLoading(action),
-              },
-            },
-          };
-        case actionTypes.includeActions[actionError]:
-          let error = action.payload ? action.payload : null;
-          return {
-            ...prevState,
-            actions: {
-              ...prevActions,
-              [act]: {
-                ...prevActions[act],
-                ...setError(action),
-              },
-            },
-          };
-      }
-    }
+    let actionName;
+
+    const findByActionSubType = subType => (
+      (
+        actionTypes[subType] && Object.entries(actionTypes[subType])
+          .find(([, actionType]) => action.type === actionType)
+      ) || []
+    )[0]
+    actionName = findByActionSubType('isLoading')
+    // For example: actionName === 'getList' when getList() triggers isLoading action
+    if (actionName) return setIsLoading(prevState, action, actionName);
+
+    actionName = findByActionSubType('error')
+    if (actionName) return setError(prevState, action, actionName);
+
+    actionName = findByActionSubType('clearError')
+    if (actionName) return setClearError(prevState, action, actionName);
+
     for (let [propName, initialValue] of Object.entries(includeState)) {
       const propNameTitleCase = titleCase(propName);
       switch (action.type) {
@@ -143,38 +161,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: selectedIdsNew }
             : {},
         };
-      case actionTypes.getListIsLoading:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            getList: setIsLoading(action),
-          },
-        };
-      case actionTypes.getListError:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            getList: setError(action),
-          },
-        };
-      case actionTypes.getIsLoading:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            get: setIsLoading(action),
-          },
-        };
-      case actionTypes.getError:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            get: setError(action),
-          },
-        };
       case actionTypes.set:
         return {
           ...prevState,
@@ -202,38 +188,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...getAsyncInitialState('update'),
           },
         };
-        case actionTypes.updateIsLoading:
-          return {
-            ...prevState,
-            actions: {
-              ...prevActions,
-              update: setIsLoading(action),
-            },
-          };
-        case actionTypes.updateError:
-          return {
-            ...prevState,
-            actions: {
-              ...prevActions,
-              update: setError(action),
-            },
-          };
-      case actionTypes.createIsLoading:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            create: setIsLoading(action),
-          },
-        };
-      case actionTypes.createError:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            create: setError(action),
-          },
-        };
       case actionTypes.clear:
         const newList = { ...(prevState || {}).list };
         if (actions.select === 'multiple') {
@@ -258,22 +212,6 @@ const getSubReducer = (objectName, config, actionTypes) => {
                 [selectedIds]: selectedIdsNew,
               }
             : {},
-        };
-      case actionTypes.deleteIsLoading:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            delete: setIsLoading(action),
-          },
-        };
-      case actionTypes.deleteError:
-        return {
-          ...prevState,
-          actions: {
-            ...prevActions,
-            delete: setError(action),
-          },
         };
       case actionTypes.select:
         return {
@@ -313,7 +251,7 @@ export default (objectName, config = {}, { actionTypes }) => {
     recursive,
     selectedId,
   } = config;
-  console.log({ config, actionTypes })
+  console.log(actionTypes)
 
   const subReducer = getSubReducer(objectName, config, actionTypes)
   const reducer = (state, action) => {
@@ -343,20 +281,13 @@ export default (objectName, config = {}, { actionTypes }) => {
             }
           : state ? state.list : null
     }
-
     switch (action.type) {
-      case actionTypes.getAllIsLoading:
-        return {
-          ...prevState,
-          getAllIsLoading: action.payload === false ? false : true,
-          getAllError: null,
-        };
-      case actionTypes.getAllError:
-        return {
-          ...prevState,
-          getAllIsLoading: false,
-          getAllError: action.payload || null,
-        };
+      case actionTypes.isLoading.getAll:
+        return setIsLoading(prevState, action, 'getAll');
+      case actionTypes.error.getAll:
+        return setError(prevState, action, 'getAll');
+      case actionTypes.error.getAll:
+        return setClearError(prevState, action, 'getAll');
       case actionTypes.clearAll:
         return initialStateRoot(config);
       case actionTypes.setAll:

@@ -37,16 +37,6 @@ const getActionTypes = (actionPrefix, actionName, actionSuffix) => ({
     `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`,
 })
 
-const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
-  const func = `${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`;
-  const action = `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`;
-  return {
-    [func]: action,
-    [`${func}IsLoading`]: `${action}_${IS_LOADING}`,
-    [`${func}Error`]: `${action}_${ERROR}`,
-    [`${func}ClearError`]: `${action}_${CLEAR_ERROR}`,
-  };
-}
 
 const getActionTypesIncludeState = (propName, objectName) => {
   const propNameUpperSnakeCase = camelToSnakeCase(propName).toUpperCase()
@@ -153,7 +143,24 @@ const formatActionTypes = (objectName, config) => {
   //       : {},
   //   };
   // }
-  return {
+
+  const actionTypesAsync = {
+    actions: {},
+    isLoading: {},
+    error: {},
+    clearError: {},
+  }
+  const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
+    const func = `${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`;
+    const action = `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`;
+
+    actionTypesAsync.isLoading[func] = `${action}_${IS_LOADING}`;
+    actionTypesAsync.error[func] = `${action}_${ERROR}`;
+    actionTypesAsync.clearError[func] = `${action}_${CLEAR_ERROR}`;
+
+    return { [func]: action };
+  }
+  const actionTypes = {
     ...getActionTypes(SET, actionSingle),
     ...getActionTypes(CLEAR, actionSingle),
     ...getActionTypes(SET, actionPlural, LIST),
@@ -207,6 +214,11 @@ const formatActionTypes = (objectName, config) => {
           {}
       ),
     },
+  };
+
+  return {
+    ...actionTypes,
+    ...actionTypesAsync,
   };
 }
 
@@ -289,7 +301,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.get;
 
-      dispatch({ type: actionTypes.getIsLoading, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
+      dispatch({ type: actionTypes.isLoading.get, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
@@ -301,7 +313,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.getError, payload: error });
+        dispatch({ type: actionTypes.error.get, payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
@@ -312,7 +324,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return;
       }
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
-      dispatch({ type: actionTypes.getListIsLoading, ...getParentObj(params, parent) });
+      dispatch({ type: actionTypes.isLoading.getList, ...getParentObj(params, parent) });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         const responseData = typeof prepareResponse === 'function'
@@ -374,7 +386,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.create;
-      dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
+      dispatch({ type: actionTypes.isLoading.create, ...getParentObj(obj, parent) });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
@@ -386,7 +398,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.create, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
@@ -399,7 +411,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.update;
       
       dispatch({
-        type: actionTypes.updateIsLoading,
+        type: actionTypes.isLoading.update,
         ...getParentObj(original ? original : obj, parent),
       });
       try {
@@ -426,7 +438,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return response.data
       } catch (error) {
         dispatch({
-          type: actionTypes.updateError,
+          type: actionTypes.error.update,
           ...getParentObj(obj, parent),
           payload: error,
         });
@@ -440,7 +452,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.delete;
-      dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
+      dispatch({ type: actionTypes.isLoading.delete, ...getParentObj(obj, parent) });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
@@ -452,7 +464,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, combineActionDispatchers(dispatch));
         return true;
       } catch (error) {
-        dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.delete, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
@@ -463,7 +475,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;
-      dispatch({ type: actionTypes.getAllIsLoading });
+      dispatch({ type: actionTypes.isLoading.getAll });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
@@ -474,7 +486,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.getAllError, payload: error });
+        dispatch({ type: actionTypes.error.getAll, payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
@@ -519,11 +531,11 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                     ? customParent(obj, { args, getState, params })
                     : customParent
                 };
-            dispatch({ type: actionTypes.includeActions[`${action}IsLoading`], ...parentObj });
+            dispatch({ type: actionTypes.isLoading[action], ...parentObj });
 
             try {
               const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
-              dispatch({ type: actionTypes.includeActions[`${action}IsLoading`], payload: false, ...parentObj });
+              dispatch({ type: actionTypes.isLoading[action], payload: false, ...parentObj });
 
               callIfFunc(
                 onResponse,
@@ -546,7 +558,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
               callIfFunc(callerOnError, error);
             };
           },
-        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.includeActions[`${action}ClearErrored`] }),
+        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.error[action] }),
       }),
       {}
     );
