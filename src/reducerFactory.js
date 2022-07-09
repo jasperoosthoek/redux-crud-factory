@@ -41,7 +41,7 @@ const getInitialState = ({
   state: includeState,
 });
 
-// Single function handles all isLoading and error actions in state.
+// Single functions handle all isLoading, error & clearError actions in state.
 // This is DRY and can be easily extended
 const setIsLoading = (state, action, actionName) => ({
   ...state,
@@ -136,7 +136,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
     }
 
     switch (action.type) {
-      case actionTypes.setList:
+      case actionTypes.actions.setList:
         // To do: test for action.payload is undefined
         let list = arrayToObject(action.payload, byKey);
         if (actions.select === 'multiple' && selectedIdsNew.length !== 0) {
@@ -161,7 +161,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: selectedIdsNew }
             : {},
         };
-      case actionTypes.set:
+      case actionTypes.actions.set:
         return {
           ...prevState,
           list: { ...prevState.list || {}, [action.payload[byKey]]: action.payload },
@@ -172,7 +172,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...getAsyncInitialState('clear'),
           },
         };
-      case actionTypes.update:
+      case actionTypes.actions.update:
         return {
           ...prevState,
           list: {
@@ -188,7 +188,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...getAsyncInitialState('update'),
           },
         };
-      case actionTypes.clear:
+      case actionTypes.actions.clear:
         const newList = { ...(prevState || {}).list };
         if (actions.select === 'multiple') {
           selectedIdsNew.delete(action.payload[byKey]);
@@ -213,7 +213,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
               }
             : {},
         };
-      case actionTypes.select:
+      case actionTypes.actions.select:
         return {
           ...prevState,
           ...actions.select === 'single'
@@ -222,7 +222,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
             : {},
         };
-      case actionTypes.unSelect:
+      case actionTypes.actions.unSelect:
         if (actions.select === 'multiple') {
           selectedIdsNew.delete(typeof action.payload === 'object' ? action.payload[byKey] : action.payload)
         }
@@ -234,7 +234,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: selectedIdsNew }
             : {},
         };
-      case actionTypes.clearList:
+      case actionTypes.actions.clearList:
         return getInitialState(config);
       default:
         // Return null to indicate this reducer did not update

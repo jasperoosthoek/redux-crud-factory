@@ -145,7 +145,6 @@ const formatActionTypes = (objectName, config) => {
   // }
 
   const actionTypesAsync = {
-    actions: {},
     isLoading: {},
     error: {},
     clearError: {},
@@ -161,37 +160,39 @@ const formatActionTypes = (objectName, config) => {
     return { [func]: action };
   }
   const actionTypes = {
-    ...getActionTypes(SET, actionSingle),
-    ...getActionTypes(CLEAR, actionSingle),
-    ...getActionTypes(SET, actionPlural, LIST),
-    ...getActionTypes(CLEAR, actionPlural, LIST),
-    ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
-    ...(actions.create ? getAsyncActionTypes : getActionTypes)(CREATE, actionSingle),
-    ...(actions.update ? getAsyncActionTypes : getActionTypes)(UPDATE, actionSingle),
-    ...(actions.delete ? getAsyncActionTypes : getActionTypes)(DELETE, actionSingle),
-    ...(actions.getList ? getAsyncActionTypes : getActionTypes)(GET, actionPlural, LIST),
-    ...actions.select
-      ?
-        {
-          ...getActionTypes(SELECT, actionSingle),
-          ...getActionTypes(UN_SELECT, actionSingle),
-        }
-      : {},
-    ...actions.select === 'multiple'
-      ?
-        {
-          ...getActionTypes(SELECT_ALL, actionPlural),
-          ...getActionTypes(UN_SELECT_ALL, actionPlural),
-        }
-      : {},
-    ...parent
-      ?
-        {
-          ...getAsyncActionTypes(GET_ALL, actionPlural),
-          ...getActionTypes(SET_ALL, actionPlural),
-          ...getActionTypes(CLEAR_ALL, actionPlural),
-        }
-      : {},
+    actions: {
+      ...getActionTypes(SET, actionSingle),
+      ...getActionTypes(CLEAR, actionSingle),
+      ...getActionTypes(SET, actionPlural, LIST),
+      ...getActionTypes(CLEAR, actionPlural, LIST),
+      ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
+      ...(actions.create ? getAsyncActionTypes : getActionTypes)(CREATE, actionSingle),
+      ...(actions.update ? getAsyncActionTypes : getActionTypes)(UPDATE, actionSingle),
+      ...(actions.delete ? getAsyncActionTypes : getActionTypes)(DELETE, actionSingle),
+      ...(actions.getList ? getAsyncActionTypes : getActionTypes)(GET, actionPlural, LIST),
+      ...actions.select
+        ?
+          {
+            ...getActionTypes(SELECT, actionSingle),
+            ...getActionTypes(UN_SELECT, actionSingle),
+          }
+        : {},
+      ...actions.select === 'multiple'
+        ?
+          {
+            ...getActionTypes(SELECT_ALL, actionPlural),
+            ...getActionTypes(UN_SELECT_ALL, actionPlural),
+          }
+        : {},
+      ...parent
+        ?
+          {
+            ...getAsyncActionTypes(GET_ALL, actionPlural),
+            ...getActionTypes(SET_ALL, actionPlural),
+            ...getActionTypes(CLEAR_ALL, actionPlural),
+          }
+        : {},
+    },
     includeActions: {
       ...Object.entries(includeActions)
         .reduce((obj, [action, { isAsync }]) => 
@@ -305,7 +306,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.set,
+          type: actionTypes.actions.set,
           payload: response.data,
           ...getParentObj(response.data),
         });
@@ -340,7 +341,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
             )
           : response.data;
         dispatch({
-          type: actionTypes.setList,
+          type: actionTypes.actions.setList,
           payload: responseData,
           ...getParentObj(params),
         });
@@ -349,7 +350,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return responseData
       } catch (error) {
         dispatch({
-          type: actionTypes.clearList,
+          type: actionTypes.actions.clearList,
           ...getParentObj(params),
         });
         callIfFunc(globalOnError, error);
@@ -358,27 +359,27 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     set: (obj) => dispatch => dispatch({
-      type: actionTypes.set,
+      type: actionTypes.actions.set,
       payload: obj,
       ...getParentObj(obj),
     }),
     clear: (obj) => dispatch => dispatch({
-      type: actionTypes.clear,
+      type: actionTypes.actions.clear,
       payload: obj,
       ...getParentObj(obj),
     }),
     setList: (obj) => dispatch => dispatch({
-      type: actionTypes.setList,
+      type: actionTypes.actions.setList,
       payload: obj,
       ...getParentObj(obj),
     }),
     setAll: (obj) => dispatch => dispatch({
-      type: actionTypes.setAll,
+      type: actionTypes.actions.setAll,
       payload: obj,
     }),
     clearList: (obj) => dispatch => dispatch({
       // Get parent from ownProps
-      type: actionTypes.clearList,
+      type: actionTypes.actions.clearList,
       ...getParentObj(obj),
     }),
     create: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
@@ -390,7 +391,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.set,
+          type: actionTypes.actions.set,
           payload: response.data,
           ...getParentObj(response.data),
         });
@@ -420,13 +421,13 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
           dispatch({
-            type: actionTypes.clear,
+            type: actionTypes.actions.clear,
             payload: original,
             ...getParentObj(original, parent),
           });
         }
         dispatch({
-          type: actionTypes.update,
+          type: actionTypes.actions.update,
           payload: response.data,
           ...getParentObj(obj, parent),
           // Send unmutable id to be able to remove the object if byKey has changed
@@ -456,7 +457,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.clear,
+          type: actionTypes.actions.clear,
           payload: obj,
           ...getParentObj(obj),
         });
@@ -479,7 +480,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.setAll,
+          type: actionTypes.actions.setAll,
           payload: response.data,
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
@@ -493,25 +494,25 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     clearAll: () => dispatch => dispatch({
-      type: actionTypes.clearAll,
+      type: actionTypes.actions.clearAll,
     }),
     select: obj => (dispatch) => dispatch({
-        type: actionTypes.select,
+        type: actionTypes.actions.select,
         payload: obj,
         ...getParentObj(obj),
       }),
     unSelect: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.unSelect,
+      type: actionTypes.actions.unSelect,
       ...actions.select === 'multiple' ? { payload: obj } : {},
       ...getParentObj(ownProps),
     }),
     selectAll: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.selectAll,
+      type: actionTypes.actions.selectAll,
       payload: obj,
       ...getParentObj(ownProps),
     }),
     unSelectAll: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.unSelectAll,
+      type: actionTypes.actions.unSelectAll,
       payload: obj,
       ...getParentObj(ownProps),
     }),
@@ -552,7 +553,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
               callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
               return response.data;
             } catch (error) {
-              dispatch({ type: actionTypes.includeActions[`${action}Error`], payload: error, ...parentObj });
+              dispatch({ type: actionTypes.error[action], payload: error, ...parentObj });
               callIfFunc(globalOnError, error);
               callIfFunc(onCustomError, error);
               callIfFunc(callerOnError, error);
