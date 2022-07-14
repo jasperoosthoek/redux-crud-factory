@@ -4,6 +4,7 @@ import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 export default (objectName, { byKey, parent }, {
   mapToProps,
   mapToPropsStripped,
+  mapActions,
   asyncActions,
   syncActions,
   asyncActionsStripped,
@@ -41,22 +42,24 @@ export default (objectName, { byKey, parent }, {
         : mapToProps(state, { ...idObj, ...parentObj }),
       shallowEqual
     );
+    // This contains all the loading & error state of each action
+    const actionsState = useSelector(state => state[objectName].actions);
     const dispatch = useDispatch();
 
     return {
       ...obj,
-      ...Object.entries(stripped ? asyncActionsStripped : asyncActions).reduce(
+      ...Object.entries(asyncActionsStripped).reduce(
         (o, [actionName, actionFunction]) => {
-          let dispatchableAction
-          if (actionName.startsWith('create')) {
+          let dispatchableAction;
+          if (actionName === 'create') {
             dispatchableAction = (obj = {}, ...restArgs) =>
               dispatch(actionFunction({ ...parentObj, ...obj }, ...restArgs)
             );
-          } else if (actionName.startsWith('update')) {
+          } else if (actionName === 'update') {
             dispatchableAction = (obj = {}, ...restArgs) =>
               dispatch(actionFunction({ ...idObj, ...parentObj, ...obj }, ...restArgs)
             );
-          } else if (actionName.startsWith('delete')) {
+          } else if (actionName === 'delete') {
             dispatchableAction = (obj = {}, ...restArgs) =>
               dispatch(actionFunction({
                 ...idObj,
@@ -67,16 +70,15 @@ export default (objectName, { byKey, parent }, {
           } else { 
               dispatchableAction = (...args) => dispatch(actionFunction(...args));
           }
+          Object.assign(dispatchableAction, actionsState[actionName]);
           
-          dispatchableAction.isLoading = obj[`${actionName}IsLoading`];
-          dispatchableAction.error = obj[`${actionName}Error`];
-          return { ...o, [actionName]: dispatchableAction };
+          return { ...o, [stripped ? actionName : mapActions[actionName]]: dispatchableAction };
         }, {}),
       ...Object.entries(asyncActionsIncluded).reduce(
         (o, [actionName, actionFunction]) => {
           const dispatchableAction = (...args) => dispatch(actionFunction(...args));
-          dispatchableAction.isLoading = obj[`${actionName}IsLoading`];
-          dispatchableAction.error = obj[`${actionName}Error`];
+          Object.assign(dispatchableAction, actionsState[actionName]);
+          
           return { ...o, [actionName]: dispatchableAction };
         }, {}),
       ...Object.entries({ ...syncActionsIncluded, ...stripped ? syncActionsStripped : syncActions })

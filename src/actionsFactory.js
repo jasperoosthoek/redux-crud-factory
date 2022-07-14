@@ -277,7 +277,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions
-  const _axios = ({ method, route, params, obj, original, axiosConfig={}, args, getState, prepare }) => axios({
+  const getAxiosConfig = ({ method, route, params, obj, original, axiosConfig={}, args, getState, prepare }) => ({
     ...axiosConfig,
     method,
     url: typeof route === 'function' ? route(original ? original : obj, { args, getState, params }) : route, 
@@ -296,15 +296,20 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   });
 
   const actionFunctions = {
-    get: (obj, { params = {}, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
+    get: (obj, { params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
       if (getFromState(getState, 'getIsLoading')) {
         return;
       }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.get;
-
-      dispatch({ type: actionTypes.isLoading.get, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
+      
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });  
+      dispatch({
+        type: actionTypes.isLoading.get,
+        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(typeof obj === 'object' ? obj : params, parent),
+      });
       try {
-        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         dispatch({
           type: actionTypes.actions.set,
           payload: response.data,
@@ -320,14 +325,19 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callerOnError, error);
       };
     },
-    getList: ({ params = {}, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
+    getList: ({ params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
       if (getFromState(getState, 'getList', 'isLoading')) {
         return;
       }
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
-      dispatch({ type: actionTypes.isLoading.getList, ...getParentObj(params, parent) });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
+      dispatch({
+        type: actionTypes.isLoading.getList,
+        asyncState: { params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(params, parent),
+      });
       try {
-        const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         const responseData = typeof prepareResponse === 'function'
           ? prepareResponse(
               response.data,
@@ -387,9 +397,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.create;
-      dispatch({ type: actionTypes.isLoading.create, ...getParentObj(obj, parent) });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });
+      dispatch({
+        type: actionTypes.isLoading.create,
+        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(obj, parent),
+      });
       try {
-        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         dispatch({
           type: actionTypes.actions.set,
           payload: response.data,
@@ -411,12 +426,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.update;
       
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, original, axiosConfig, getState, args, prepare });
       dispatch({
         type: actionTypes.isLoading.update,
+        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
         ...getParentObj(original ? original : obj, parent),
       });
       try {
-        const response = await _axios({ method, route, params, obj, original, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         if (parent && typeof original === 'object' && original[parent] !== response.data[parent]) {
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
@@ -453,9 +470,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.delete;
-      dispatch({ type: actionTypes.isLoading.delete, ...getParentObj(obj, parent) });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });
+      dispatch({
+        type: actionTypes.isLoading.delete,
+        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(obj, parent),
+      });
       try {
-        const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         dispatch({
           type: actionTypes.actions.clear,
           payload: obj,
@@ -475,10 +497,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       // if (getFromState(getState, 'getAll', 'isLoading')) {
       //   return;
       // }
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;
-      dispatch({ type: actionTypes.isLoading.getAll });
+      dispatch({
+        type: actionTypes.isLoading.getAll,
+        asyncState: { params, args, method, route: mergedAxiosConfig.url },
+      });
       try {
-        const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
+        const response = await axios(mergedAxiosConfig);
         dispatch({
           type: actionTypes.actions.setAll,
           payload: response.data,
@@ -523,7 +549,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError, axiosConfig }]) =>
       ({
         ...o,
-        [action]: (obj, { params = {}, callback, onError: callerOnError, args } = {}) =>
+        [action]: (obj, { params, callback, onError: callerOnError, args } = {}) =>
           async (dispatch, getState) => {
             const parentObj = !customParent
               ? getParentObj(obj, parent)
@@ -532,10 +558,15 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                     ? customParent(obj, { args, getState, params })
                     : customParent
                 };
-            dispatch({ type: actionTypes.isLoading[action], ...parentObj });
+            const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
+            dispatch({
+              type: actionTypes.isLoading[action],
+              asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
+              ...parentObj,
+            });
 
             try {
-              const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
+              const response = await axios(mergedAxiosConfig);
               dispatch({ type: actionTypes.isLoading[action], payload: false, ...parentObj });
 
               callIfFunc(

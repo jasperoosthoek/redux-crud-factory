@@ -43,17 +43,20 @@ const getInitialState = ({
 
 // Single functions handle all isLoading, error & clearError actions in state.
 // This is DRY and can be easily extended
-const setIsLoading = (state, action, actionName) => ({
-  ...state,
-  actions: {
-    ...state.actions,
-    [actionName]: {
-      ...state.actions[actionName],
-      isLoading: action.payload === false ? false : true,
-      error: null,
+const setIsLoading = (state, { payload, asyncState }, actionName) => {
+  const isLoading = payload === false ? false : true;
+  return {
+    ...state,
+    actions: {
+      ...state.actions,
+      [actionName]: {
+        isLoading,
+        error: null,
+        ...isLoading ? asyncState : {},
+      },
     },
-  },
-});
+  }
+};
 
 const setError = (state, action, actionName) => ({
   ...state,
@@ -72,7 +75,6 @@ const setClearError = (state, action, actionName) => ({
   actions: {
     ...state.actions,
     [actionName]: {
-      ...state.actions[actionName],
       isLoading: false,
       error: null,
     },
