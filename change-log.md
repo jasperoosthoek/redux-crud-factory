@@ -88,9 +88,3 @@
 - Refactor `actionTypes` from plain object to nested object with sub types
 - Simplify `reducerFactory` by handling all `isLoading`, `error` and `clearError` action sub types at once
 - Add `args`, `params`, `route` and `method` to loading state
-
-##### Upcoming
-- Merge `includeActions` with `actions`
-- Move `config.actions.select` to `config.select`
-- New `setState` action to overrides complete state or part of state similar to class based React components
-- New `clearState` action to reset state to initial state
