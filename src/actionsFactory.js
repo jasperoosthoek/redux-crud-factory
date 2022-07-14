@@ -37,24 +37,14 @@ const getActionTypes = (actionPrefix, actionName, actionSuffix) => ({
     `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`,
 })
 
-const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
-  const func = `${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`;
-  const action = `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`;
-  return {
-    [func]: action,
-    [`${func}IsLoading`]: `${action}_${IS_LOADING}`,
-    [`${func}Error`]: `${action}_${ERROR}`,
-    [`${func}ClearError`]: `${action}_${CLEAR_ERROR}`,
-  };
-}
 
-const getActionTypesFromPropName = (propName, objectName) => {
+const getActionTypesIncludeState = (propName, objectName) => {
   const propNameUpperSnakeCase = camelToSnakeCase(propName).toUpperCase()
   const objectNameUpperSnakeCase = camelToSnakeCase(objectName).toUpperCase()
   return (
     {
-      [`set${titleCase(propName)}`]: `${SET}_${objectNameUpperSnakeCase}_${propNameUpperSnakeCase}`,
-      [`clear${titleCase(propName)}`]: `${CLEAR}_${objectNameUpperSnakeCase}_${propNameUpperSnakeCase}`,
+      [`set${titleCase(propName)}`]: `${SET}_${objectNameUpperSnakeCase}_STATE_${propNameUpperSnakeCase}`,
+      [`clear${titleCase(propName)}`]: `${CLEAR}_${objectNameUpperSnakeCase}_STATE_${propNameUpperSnakeCase}`,
     }
   );
 };
@@ -79,130 +69,157 @@ const formatActionTypes = (objectName, config) => {
     parent,
     actions,
     includeActions,
-    includeState,
+    state: includeState,
   } = config;
   const { actionSingle, actionPlural } = formatActionAndFunctionNames(objectName);
   
-  if (typeof actionTypeStyle == 'function') {
-    return {
-      set: actionTypeStyle(SET),
-      clear: actionTypeStyle(CLEAR),
-      ...actions.get
+  // if (typeof actionTypeStyle == 'function') {
+  //   return {
+  //     set: actionTypeStyle(SET),
+  //     clear: actionTypeStyle(CLEAR),
+  //     ...actions.get
+  //       ?
+  //         {
+  //           get: actionTypeStyle(GET),
+  //           getIsLoading: actionTypeStyle(GET_IS_LOADING),
+  //           getError: actionTypeStyle(GET_ERROR),
+  //         }
+  //       : {},
+  //     ...actions.create
+  //       ?
+  //         {
+  //           create: actionTypeStyle(CREATE),
+  //           createIsLoading: actionTypeStyle(CREATE_IS_LOADING),
+  //           createError: actionTypeStyle(CREATE_ERROR),
+  //         }
+  //       : {},
+  //     ...actions.update
+  //       ?
+  //         {
+  //           update: actionTypeStyle(UPDATE),
+  //           updateIsLoading: actionTypeStyle(UPDATE_IS_LOADING),
+  //           updateError: actionTypeStyle(UPDATE_ERROR),
+  //         }
+  //       : {},
+  //     ...actions.delete
+  //       ?
+  //         {
+  //           delete: `${DELETE}_${actionSingle}`,
+  //           deleteIsLoading: actionTypeStyle(DELETE_IS_LOADING),
+  //           deleteError: actionTypeStyle(DELETE_ERROR),
+  //         }
+  //       : {},
+  //     ...actions.getList
+  //       ?
+  //         {
+  //           getList: actionTypeStyle(GET_LIST),
+  //           setList: actionTypeStyle(SET_LIST),
+  //           clearList: actionTypeStyle(CLEAR_LIST),
+  //         }
+  //       : {},
+  //     ...actions.select === 'single'
+  //       ?
+  //         {
+  //           select: actionTypeStyle(SELECT),
+  //           unSelect: actionTypeStyle(UN_SELECT),
+  //         }
+  //       : {},
+  //     ...actions.select === 'multiple'
+  //       ?
+  //         {
+  //           selectAll: actionTypeStyle(SELECT_ALL),
+  //           unSelectAll: actionTypeStyle(UN_SELECT_ALL),
+  //         }
+  //       : {},
+  //     ...parent
+  //       ?
+  //         {
+  //           getAll: actionTypeStyle(GET_ALL),
+  //           getAllIsLoading: actionTypeStyle(GET_ALL_IS_LOADING),
+  //           getAllError: actionTypeStyle(GET_ALL_ERROR),
+  //           setAll: actionTypeStyle(SET_ALL),
+  //           clearAll: actionTypeStyle(CLEAR_ALL),
+  //         }
+  //       : {},
+  //   };
+  // }
+
+  const actionTypesAsync = {
+    isLoading: {},
+    error: {},
+    clearError: {},
+  }
+  const getAsyncActionTypes = (actionPrefix, actionName, actionSuffix) => {
+    const func = `${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`;
+    const action = `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`;
+
+    actionTypesAsync.isLoading[func] = `${action}_${IS_LOADING}`;
+    actionTypesAsync.error[func] = `${action}_${ERROR}`;
+    actionTypesAsync.clearError[func] = `${action}_${CLEAR_ERROR}`;
+
+    return { [func]: action };
+  }
+  const actionTypes = {
+    actions: {
+      ...getActionTypes(SET, actionSingle),
+      ...getActionTypes(CLEAR, actionSingle),
+      ...getActionTypes(SET, actionPlural, LIST),
+      ...getActionTypes(CLEAR, actionPlural, LIST),
+      ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
+      ...(actions.create ? getAsyncActionTypes : getActionTypes)(CREATE, actionSingle),
+      ...(actions.update ? getAsyncActionTypes : getActionTypes)(UPDATE, actionSingle),
+      ...(actions.delete ? getAsyncActionTypes : getActionTypes)(DELETE, actionSingle),
+      ...(actions.getList ? getAsyncActionTypes : getActionTypes)(GET, actionPlural, LIST),
+      ...actions.select
         ?
           {
-            get: actionTypeStyle(GET),
-            getIsLoading: actionTypeStyle(GET_IS_LOADING),
-            getError: actionTypeStyle(GET_ERROR),
-          }
-        : {},
-      ...actions.create
-        ?
-          {
-            create: actionTypeStyle(CREATE),
-            createIsLoading: actionTypeStyle(CREATE_IS_LOADING),
-            createError: actionTypeStyle(CREATE_ERROR),
-          }
-        : {},
-      ...actions.update
-        ?
-          {
-            update: actionTypeStyle(UPDATE),
-            updateIsLoading: actionTypeStyle(UPDATE_IS_LOADING),
-            updateError: actionTypeStyle(UPDATE_ERROR),
-          }
-        : {},
-      ...actions.delete
-        ?
-          {
-            delete: `${DELETE}_${actionSingle}`,
-            deleteIsLoading: actionTypeStyle(DELETE_IS_LOADING),
-            deleteError: actionTypeStyle(DELETE_ERROR),
-          }
-        : {},
-      ...actions.getList
-        ?
-          {
-            getList: actionTypeStyle(GET_LIST),
-            setList: actionTypeStyle(SET_LIST),
-            clearList: actionTypeStyle(CLEAR_LIST),
-          }
-        : {},
-      ...actions.select === 'single'
-        ?
-          {
-            select: actionTypeStyle(SELECT),
-            unSelect: actionTypeStyle(UN_SELECT),
+            ...getActionTypes(SELECT, actionSingle),
+            ...getActionTypes(UN_SELECT, actionSingle),
           }
         : {},
       ...actions.select === 'multiple'
         ?
           {
-            selectAll: actionTypeStyle(SELECT_ALL),
-            unSelectAll: actionTypeStyle(UN_SELECT_ALL),
+            ...getActionTypes(SELECT_ALL, actionPlural),
+            ...getActionTypes(UN_SELECT_ALL, actionPlural),
           }
         : {},
       ...parent
         ?
           {
-            getAll: actionTypeStyle(GET_ALL),
-            getAllIsLoading: actionTypeStyle(GET_ALL_IS_LOADING),
-            getAllError: actionTypeStyle(GET_ALL_ERROR),
-            setAll: actionTypeStyle(SET_ALL),
-            clearAll: actionTypeStyle(CLEAR_ALL),
+            ...getAsyncActionTypes(GET_ALL, actionPlural),
+            ...getActionTypes(SET_ALL, actionPlural),
+            ...getActionTypes(CLEAR_ALL, actionPlural),
           }
         : {},
-    };
-  }
+    },
+    includeActions: {
+      ...Object.entries(includeActions)
+        .reduce((obj, [action, { isAsync }]) => 
+          ({
+            ...obj,
+            ...isAsync
+              ? getAsyncActionTypes(camelToSnakeCase(action))
+              : getActionTypes(camelToSnakeCase(action)),
+          }),
+          {}
+      ),
+    },
+    includeState: {
+      ...Object.keys(includeState)
+        .reduce((obj, propName) => 
+          ({
+            ...obj,
+            ...getActionTypesIncludeState(propName, objectName),
+          }),
+          {}
+      ),
+    },
+  };
+
   return {
-    ...getActionTypes(SET, actionSingle),
-    ...getActionTypes(CLEAR, actionSingle),
-    ...getActionTypes(SET, actionPlural, LIST),
-    ...getActionTypes(CLEAR, actionPlural, LIST),
-    ...(actions.get ? getAsyncActionTypes : getActionTypes)(GET, actionSingle),
-    ...(actions.create ? getAsyncActionTypes : getActionTypes)(CREATE, actionSingle),
-    ...(actions.update ? getAsyncActionTypes : getActionTypes)(UPDATE, actionSingle),
-    ...(actions.delete ? getAsyncActionTypes : getActionTypes)(DELETE, actionSingle),
-    ...(actions.getList ? getAsyncActionTypes : getActionTypes)(GET, actionPlural, LIST),
-    ...actions.select
-      ?
-        {
-          ...getActionTypes(SELECT, actionSingle),
-          ...getActionTypes(UN_SELECT, actionSingle),
-        }
-      : {},
-    ...actions.select === 'multiple'
-      ?
-        {
-          ...getActionTypes(SELECT_ALL, actionPlural),
-          ...getActionTypes(UN_SELECT_ALL, actionPlural),
-        }
-      : {},
-    ...parent
-      ?
-        {
-          ...getAsyncActionTypes(GET_ALL, actionPlural),
-          ...getActionTypes(SET_ALL, actionPlural),
-          ...getActionTypes(CLEAR_ALL, actionPlural),
-        }
-      : {},
-    ...Object.entries(includeActions)
-      .reduce((obj, [action, { isAsync }]) => 
-        ({
-          ...obj,
-          ...isAsync
-            ? getAsyncActionTypes(camelToSnakeCase(action))
-            : getActionTypes(camelToSnakeCase(action)),
-        }),
-        {}
-    ),
-    ...Object.keys(includeState)
-      .reduce((obj, propName) => 
-        ({
-          ...obj,
-          ...getActionTypesFromPropName(propName, objectName),
-        }),
-        {}
-    ),
+    ...actionTypes,
+    ...actionTypesAsync,
   };
 }
 
@@ -232,7 +249,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     byKey,
     actions,
     includeActions,
-    includeState,
+    state: includeState,
   } = config;
   const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
@@ -245,18 +262,18 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
   
-  const getFromState = (getState, key) => {
+  const getFromState = (getState, action, key) => {
     const state = getState()[objectName];
     if (typeof state === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" key" Initial state should include { ${objectName}: { ... } } object.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" action" Initial state should include { ${objectName}: { ... } } object.`;
     }
     if (typeof state !== 'object') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" key should have an object as value: { ${objectName}: { ... } }.`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" action should have an object as value: { ${objectName}: { ... } }.`;
     }
-    if (typeof state[key] === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${key}": { ${objectName}: { ${key}: ... } }`;
+    if (typeof state.actions[action] === 'undefined') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${action}": { ${objectName}: { ${action}: ... } }`;
     }
-    return state[key];
+    return state.actions[action][key];
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions
@@ -285,11 +302,11 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.get;
 
-      dispatch({ type: actionTypes.getIsLoading, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
+      dispatch({ type: actionTypes.isLoading.get, ...getParentObj(typeof obj === 'object' ? obj : params, parent)  });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.set,
+          type: actionTypes.actions.set,
           payload: response.data,
           ...getParentObj(response.data),
         });
@@ -297,18 +314,18 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.getError, payload: error });
+        dispatch({ type: actionTypes.error.get, payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
     getList: ({ params = {}, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'getListIsLoading')) {
+      if (getFromState(getState, 'getList', 'isLoading')) {
         return;
       }
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
-      dispatch({ type: actionTypes.getListIsLoading, ...getParentObj(params, parent) });
+      dispatch({ type: actionTypes.isLoading.getList, ...getParentObj(params, parent) });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         const responseData = typeof prepareResponse === 'function'
@@ -324,7 +341,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
             )
           : response.data;
         dispatch({
-          type: actionTypes.setList,
+          type: actionTypes.actions.setList,
           payload: responseData,
           ...getParentObj(params),
         });
@@ -333,7 +350,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return responseData
       } catch (error) {
         dispatch({
-          type: actionTypes.clearList,
+          type: actionTypes.actions.clearList,
           ...getParentObj(params),
         });
         callIfFunc(globalOnError, error);
@@ -342,39 +359,39 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     set: (obj) => dispatch => dispatch({
-      type: actionTypes.set,
+      type: actionTypes.actions.set,
       payload: obj,
       ...getParentObj(obj),
     }),
     clear: (obj) => dispatch => dispatch({
-      type: actionTypes.clear,
+      type: actionTypes.actions.clear,
       payload: obj,
       ...getParentObj(obj),
     }),
     setList: (obj) => dispatch => dispatch({
-      type: actionTypes.setList,
+      type: actionTypes.actions.setList,
       payload: obj,
       ...getParentObj(obj),
     }),
     setAll: (obj) => dispatch => dispatch({
-      type: actionTypes.setAll,
+      type: actionTypes.actions.setAll,
       payload: obj,
     }),
     clearList: (obj) => dispatch => dispatch({
       // Get parent from ownProps
-      type: actionTypes.clearList,
+      type: actionTypes.actions.clearList,
       ...getParentObj(obj),
     }),
     create: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'createIsLoading')) {
+      // if (getFromState(getState, 'create', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.create;
-      dispatch({ type: actionTypes.createIsLoading, ...getParentObj(obj, parent) });
+      dispatch({ type: actionTypes.isLoading.create, ...getParentObj(obj, parent) });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.set,
+          type: actionTypes.actions.set,
           payload: response.data,
           ...getParentObj(response.data),
         });
@@ -382,20 +399,20 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.createError, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.create, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
     update: (obj, { original, callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'updateIsLoading')) {
+      // if (getFromState(getState, 'update', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.update;
       
       dispatch({
-        type: actionTypes.updateIsLoading,
+        type: actionTypes.isLoading.update,
         ...getParentObj(original ? original : obj, parent),
       });
       try {
@@ -404,13 +421,13 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
           // The parent key of the object has changed. The sub reducer will not be able to find it and the
           // most straight forward option is to delete the original object and create it again
           dispatch({
-            type: actionTypes.clear,
+            type: actionTypes.actions.clear,
             payload: original,
             ...getParentObj(original, parent),
           });
         }
         dispatch({
-          type: actionTypes.update,
+          type: actionTypes.actions.update,
           payload: response.data,
           ...getParentObj(obj, parent),
           // Send unmutable id to be able to remove the object if byKey has changed
@@ -422,7 +439,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         return response.data
       } catch (error) {
         dispatch({
-          type: actionTypes.updateError,
+          type: actionTypes.error.update,
           ...getParentObj(obj, parent),
           payload: error,
         });
@@ -432,15 +449,15 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     delete: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'deleteIsLoading')) {
+      // if (getFromState(getState, 'delete', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.delete;
-      dispatch({ type: actionTypes.deleteIsLoading, ...getParentObj(obj, parent) });
+      dispatch({ type: actionTypes.isLoading.delete, ...getParentObj(obj, parent) });
       try {
         const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.clear,
+          type: actionTypes.actions.clear,
           payload: obj,
           ...getParentObj(obj),
         });
@@ -448,54 +465,54 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, combineActionDispatchers(dispatch));
         return true;
       } catch (error) {
-        dispatch({ type: actionTypes.deleteError, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.delete, ...getParentObj(obj, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
     getAll : ({ callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'getAllIsLoading')) {
+      // if (getFromState(getState, 'getAll', 'isLoading')) {
       //   return;
       // }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;
-      dispatch({ type: actionTypes.getAllIsLoading });
+      dispatch({ type: actionTypes.isLoading.getAll });
       try {
         const response = await _axios({ method, route, params, axiosConfig, getState, args, prepare });
         dispatch({
-          type: actionTypes.setAll,
+          type: actionTypes.actions.setAll,
           payload: response.data,
         });
         callIfFunc(actionCallback, response.data, combineActionDispatchers(dispatch));
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.getAllError, payload: error });
+        dispatch({ type: actionTypes.error.getAll, payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
     clearAll: () => dispatch => dispatch({
-      type: actionTypes.clearAll,
+      type: actionTypes.actions.clearAll,
     }),
     select: obj => (dispatch) => dispatch({
-        type: actionTypes.select,
+        type: actionTypes.actions.select,
         payload: obj,
         ...getParentObj(obj),
       }),
     unSelect: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.unSelect,
+      type: actionTypes.actions.unSelect,
       ...actions.select === 'multiple' ? { payload: obj } : {},
       ...getParentObj(ownProps),
     }),
     selectAll: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.selectAll,
+      type: actionTypes.actions.selectAll,
       payload: obj,
       ...getParentObj(ownProps),
     }),
     unSelectAll: obj => (dispatch, ownProps) => dispatch({
-      type: actionTypes.unSelectAll,
+      type: actionTypes.actions.unSelectAll,
       payload: obj,
       ...getParentObj(ownProps),
     }),
@@ -509,17 +526,17 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         [action]: (obj, { params = {}, callback, onError: callerOnError, args } = {}) =>
           async (dispatch, getState) => {
             const parentObj = !customParent
-                ? getParentObj(obj, parent)
-                : { 
-                    parent: typeof customParent === 'function'
-                      ? customParent(obj, { args, getState, params })
-                      : customParent
-                  };
-            dispatch({ type: actionTypes[`${action}IsLoading`], ...parentObj });
+              ? getParentObj(obj, parent)
+              : { 
+                  parent: typeof customParent === 'function'
+                    ? customParent(obj, { args, getState, params })
+                    : customParent
+                };
+            dispatch({ type: actionTypes.isLoading[action], ...parentObj });
 
             try {
               const response = await _axios({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
-              dispatch({ type: actionTypes[`${action}IsLoading`], payload: false, ...parentObj });
+              dispatch({ type: actionTypes.isLoading[action], payload: false, ...parentObj });
 
               callIfFunc(
                 onResponse,
@@ -536,20 +553,20 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
               callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
               return response.data;
             } catch (error) {
-              dispatch({ type: actionTypes[`${action}Error`], payload: error, ...parentObj });
+              dispatch({ type: actionTypes.error[action], payload: error, ...parentObj });
               callIfFunc(globalOnError, error);
               callIfFunc(onCustomError, error);
               callIfFunc(callerOnError, error);
             };
           },
-        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes[`${action}ClearErrored`] }),
+        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.error[action] }),
       }),
       {}
     );
   const syncActionsIncluded = Object.entries(includeState).reduce(
     (o, [propName]) => {
       const propNameTitleCase = titleCase(propName);
-      const actionTypes = getActionTypesFromPropName(propName, objectName)
+      const actionTypes = getActionTypesIncludeState(propName, objectName)
       return (
         {
           ...o,

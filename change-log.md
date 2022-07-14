@@ -80,3 +80,17 @@
 
 ##### Version 0.2.6
 - Hooks return single object when supplied with id as argument instead of only { id }
+
+##### Version 0.3.0
+- Refactor state, all loading and error state in separate `actions` object
+- Manage `state` in separate `state` object
+- Rename `config.includeState` to `config.state`
+- Refactor `actionTypes` from plain object to nested object with sub types
+- Simplify `reducerFactory` by handling all `isLoading`, `error` and `clearError` action sub types at once
+
+##### Upcoming
+- Add more `args` and `params` to loading state
+- Merge `includeActions` with `actions`
+- Move `config.actions.select` to `config.select`
+- New `setState` action to overrides complete state or part of state similar to class based React components
+- New `clearState` action to reset state to initial state

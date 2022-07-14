@@ -12,7 +12,7 @@ const validateConfig = (config, defaultConfig) => {
     parseIdToInt = defaultConfig.parseIdToInt || false,
     // The key to sort by in the state
     byKey = defaultConfig.byKey || null,
-    includeState = {},
+    state = {},
     parent = null,
     parentId = defaultConfig.parentId || 'id',
     parseParentToInt = defaultConfig.parseParentToInt || false,
@@ -61,7 +61,7 @@ const validateConfig = (config, defaultConfig) => {
           parseParentToInt,
         }
       : {},
-    includeState,
+    state,
     axios,
     onError,
     actionTypeStyle,

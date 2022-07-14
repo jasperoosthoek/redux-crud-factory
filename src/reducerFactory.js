@@ -1,95 +1,155 @@
 import { arrayToObject, titleCase } from './utils';
 
-const initialStateRoot = {
-  list: null,
-  getAllIsLoading: false,
-  getAllError: null,
-};
-
 const getAsyncInitialState = action => ({
-  [`${action}IsLoading`]: false,
-  [`${action}Error`]: null,
+  [action]: {
+    isLoading: false,
+    error: null,
+  },
 })
+
+const initialStateRoot = ({ state }) => ({
+  list: null,
+  actions: getAsyncInitialState('getAll'),
+  state,
+});
 
 const getInitialState = ({
   selectedId,
   selectedIds,
   actions,
   includeActions,
-  includeState,
+  state: includeState,
 }) => ({
   list: null,
-  ...getAsyncInitialState('getList'),
-  ...actions.get ? getAsyncInitialState('get') : {},
-  ...actions.create ? getAsyncInitialState('create') : {},
-  ...actions.delete ? getAsyncInitialState('delete') : {},
-  ...actions.update ? getAsyncInitialState('update') : {},
+  actions: {
+    ...getAsyncInitialState('getList'),
+    ...actions.get ? getAsyncInitialState('get') : {},
+    ...actions.create ? getAsyncInitialState('create') : {},
+    ...actions.delete ? getAsyncInitialState('delete') : {},
+    ...actions.update ? getAsyncInitialState('update') : {},
+    ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
+      ...obj,
+      ...isAsync ? getAsyncInitialState(action) : {},
+      ...initialState,
+    }), {}),
+  },
   ...actions.select === 'single'
     ? { [selectedId]: null }
     : actions.select === 'multiple'
     ? { [selectedIds]: new Set() }
     : {},
-  ...includeState,
-  ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
-    ...obj,
-    ...isAsync ? getAsyncInitialState(action) : {},
-    ...initialState,
-  }), {})
+  state: includeState,
+});
+
+// Single functions handle all isLoading, error & clearError actions in state.
+// This is DRY and can be easily extended
+const setIsLoading = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: action.payload === false ? false : true,
+      error: null,
+    },
+  },
+});
+
+const setError = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: false,
+      error: action.payload || null,
+    },
+  },
+});
+
+const setClearError = (state, action, actionName) => ({
+  ...state,
+  actions: {
+    ...state.actions,
+    [actionName]: {
+      ...state.actions[actionName],
+      isLoading: false,
+      error: null,
+    },
+  },
 });
 
 const getSubReducer = (objectName, config, actionTypes) => {
   const {
     id,
     byKey,
-    includeState,
+    state: includeState,
     selectedId,
     selectedIds,
     actions,
     includeActions,
   } = config;
-
+  
   return (state, action) => {
     const prevState = state || getInitialState(config);
+    const prevActions = prevState.actions;
     const selectedIdsNew = selectedIds && prevState[selectedIds]
 
-    for (let [act, { isAsync }] of Object.entries(includeActions).filter(([dummy, { isAsync }]) => isAsync)) {
-      let actionIsLoading = `${act}IsLoading`;
-      let actionError = `${act}Error`;
-      switch (action.type) {
-        case actionTypes[actionIsLoading]:
-          let isLoading = action.payload === false ? false : true;
-          return {
-            ...prevState,
-            [actionIsLoading]: isLoading,
-            ...isLoading ? { [actionError]: null } : {},
-          };
-        case actionTypes[actionError]:
-          let Error = action.payload ? action.payload : null;
-          return {
-            ...prevState,
-            [actionError]: Error,
-            ...Error ? { [actionIsLoading]: false } : {},
-          };
-      }
-    }
+    let actionName;
+
+    const findByActionSubType = subType => (
+      (
+        actionTypes[subType] && Object.entries(actionTypes[subType])
+          .find(([, actionType]) => action.type === actionType)
+      ) || []
+    )[0]
+    actionName = findByActionSubType('isLoading')
+    // For example: actionName === 'getList' when getList() triggers isLoading action
+    if (actionName) return setIsLoading(prevState, action, actionName);
+
+    actionName = findByActionSubType('error')
+    if (actionName) return setError(prevState, action, actionName);
+
+    actionName = findByActionSubType('clearError')
+    if (actionName) return setClearError(prevState, action, actionName);
+
     for (let [propName, initialValue] of Object.entries(includeState)) {
       const propNameTitleCase = titleCase(propName);
       switch (action.type) {
-        case actionTypes[`set${propNameTitleCase}`]:
+        case actionTypes.includeState[`set${propNameTitleCase}`]:
           return {
             ...prevState,
-            [propName]: action.payload,
+            state: {
+              ...prevState.state,
+              [propName]: action.payload,
+            },
           };
-        case actionTypes[`clear${propNameTitleCase}`]:
+        case actionTypes.includeState[`clear${propNameTitleCase}`]:
           return {
             ...prevState,
-            [propName]: initialValue,
+            state: {
+              ...prevState.state,
+              [propName]: initialValue,
+            },
           };
       }
     }
+
+    const payloadIsUndefined = key => {
+      if (typeof action.payload === 'undefined') {
+        console.error(`Error handling action ${action.type}: The value of action.payload should not be undefined.`)
+        return true;
+      } else if (key && typeof action.payload[byKey] === 'undefined') {
+        console.error(`Error handling action ${action.type}: The value of action.payload.${key} should not be undefined.`)
+        return true;
+      }
+      return false;
+    }
+
     switch (action.type) {
-      case actionTypes.setList:
-        // To do: test for action.payload is undefined
+      case actionTypes.actions.setList:
+        if (payloadIsUndefined()) return prevState;
+        
         let list = arrayToObject(action.payload, byKey);
         if (actions.select === 'multiple' && selectedIdsNew.length !== 0) {
           selectedIdsNew.forEach(id => {
@@ -100,6 +160,10 @@ const getSubReducer = (objectName, config, actionTypes) => {
         return {
           ...prevState,
           list,
+          actions: {
+            ...prevActions,
+            ...getAsyncInitialState('getList'),
+          },
           ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
             // Reset selected value when it is selected in the previous state but it no longer exists in the
             // new state. Do not touch selected value when it still exists in the new state.
@@ -108,44 +172,23 @@ const getSubReducer = (objectName, config, actionTypes) => {
             // Do something similar for multiple selections: Remove selected ids that no longer exist in the new list
             ? { [selectedIds]: selectedIdsNew }
             : {},
-          getListIsLoading: false,
-          getListError: null,
         };
-      case actionTypes.getListIsLoading:
-        return {
-          ...prevState,
-          getListIsLoading: action.payload === false ? false : true,
-          getListError: null,
-        };
-      case actionTypes.getListError:
-        return {
-          ...prevState,
-          getListIsLoading: false,
-          getListError: action.payload || null,
-        };
-      case actionTypes.getIsLoading:
-        return {
-          ...prevState,
-          getIsLoading: action.payload === false ? false : true,
-          getError: null,
-        };
-      case actionTypes.getError:
-        return {
-          ...prevState,
-          getIsLoading: false,
-          getError: action.payload || null,
-        };
-      case actionTypes.set:
+      case actionTypes.actions.set:
+        if (payloadIsUndefined(byKey)) return prevState;
+
         return {
           ...prevState,
           list: { ...prevState.list || {}, [action.payload[byKey]]: action.payload },
-          // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
-          getIsLoading: false,
-          getError: null,
-          createIsLoading: false,
-          createError: null,
+          actions: {
+            ...prevActions,
+            // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
+            ...getAsyncInitialState('get'),
+            ...getAsyncInitialState('clear'),
+          },
         };
-      case actionTypes.update:
+      case actionTypes.actions.update:
+        if (payloadIsUndefined(byKey) || payloadIsUndefined(id)) return prevState;
+
         return {
           ...prevState,
           list: {
@@ -156,34 +199,14 @@ const getSubReducer = (objectName, config, actionTypes) => {
               : Object.fromEntries(Object.entries(prevState.list).filter(([key, obj]) => obj[id] !== action.id && obj[byKey] !== action.key)),
             [action.payload[byKey]]: { ...prevState.list[action.payload[byKey]], ...action.payload },
           },
-          updateIsLoading: false,
-          updateError: null,
+          actions: {
+            ...prevActions,
+            ...getAsyncInitialState('update'),
+          },
         };
-        case actionTypes.updateIsLoading:
-          return {
-            ...prevState,
-            updateIsLoading: action.payload === false ? false : true,
-            updateError: null,
-          };
-        case actionTypes.updateError:
-          return {
-            ...prevState,
-            updateIsLoading: false,
-            updateError: action.payload || null,
-          };
-      case actionTypes.createIsLoading:
-        return {
-          ...prevState,
-          createIsLoading: action.payload === false ? false : true,
-          createError: null,
-        };
-      case actionTypes.createError:
-        return {
-          ...prevState,
-          createIsLoading: false,
-          createError: action.payload || null,
-        };
-      case actionTypes.clear:
+      case actionTypes.actions.clear:
+        if (payloadIsUndefined(byKey)) return prevState;
+        
         const newList = { ...(prevState || {}).list };
         if (actions.select === 'multiple') {
           selectedIdsNew.delete(action.payload[byKey]);
@@ -193,6 +216,11 @@ const getSubReducer = (objectName, config, actionTypes) => {
         }
         return {
           ...prevState,
+          list: newList,
+          actions: {
+            ...prevActions,
+            ...getAsyncInitialState('delete'),
+          },
           ...actions.select === 'single'
             ? {
                 [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
@@ -202,23 +230,11 @@ const getSubReducer = (objectName, config, actionTypes) => {
                 [selectedIds]: selectedIdsNew,
               }
             : {},
-          list: newList,
-          deleteIsLoading: false,
-          deleteError: null,
         };
-      case actionTypes.deleteIsLoading:
-        return {
-          ...prevState,
-          deleteIsLoading: action.payload === false ? false : true,
-          deleteError: null,
-        };
-      case actionTypes.deleteError:
-        return {
-          ...prevState,
-          deleteIsLoading: false,
-          deleteError: action.payload || null,
-        };
-      case actionTypes.select:
+      case actionTypes.actions.select:
+        if (payloadIsUndefined()) return prevState;
+        if (typeof action.payload === 'object' && payloadIsUndefined(byKey)) return prevState;
+
         return {
           ...prevState,
           ...actions.select === 'single'
@@ -227,7 +243,10 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
             : {},
         };
-      case actionTypes.unSelect:
+      case actionTypes.actions.unSelect:
+        if (payloadIsUndefined()) return prevState;
+        if (typeof action.payload === 'object' && payloadIsUndefined(byKey)) return prevState;
+        
         if (actions.select === 'multiple') {
           selectedIdsNew.delete(typeof action.payload === 'object' ? action.payload[byKey] : action.payload)
         }
@@ -239,7 +258,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ? { [selectedIds]: selectedIdsNew }
             : {},
         };
-      case actionTypes.clearList:
+      case actionTypes.actions.clearList:
         return getInitialState(config);
       default:
         // Return null to indicate this reducer did not update
@@ -252,11 +271,11 @@ export default (objectName, config = {}, { actionTypes }) => {
   const {
     id,
     byKey,
-    includeState,
     parent,
     recursive,
     selectedId,
   } = config;
+  // console.log(actionTypes)
 
   const subReducer = getSubReducer(objectName, config, actionTypes)
   const reducer = (state, action) => {
@@ -286,22 +305,15 @@ export default (objectName, config = {}, { actionTypes }) => {
             }
           : state ? state.list : null
     }
-
     switch (action.type) {
-      case actionTypes.getAllIsLoading:
-        return {
-          ...prevState,
-          getAllIsLoading: action.payload === false ? false : true,
-          getAllError: null,
-        };
-      case actionTypes.getAllError:
-        return {
-          ...prevState,
-          getAllIsLoading: false,
-          getAllError: action.payload || null,
-        };
+      case actionTypes.isLoading.getAll:
+        return setIsLoading(prevState, action, 'getAll');
+      case actionTypes.error.getAll:
+        return setError(prevState, action, 'getAll');
+      case actionTypes.error.getAll:
+        return setClearError(prevState, action, 'getAll');
       case actionTypes.clearAll:
-        return initialStateRoot;
+        return initialStateRoot(config);
       case actionTypes.setAll:
         const obj = {};
         action.payload.map((o) => {
@@ -321,7 +333,7 @@ export default (objectName, config = {}, { actionTypes }) => {
           });
         }
         return {
-          ...initialStateRoot,
+          ...initialStateRoot(config),
           list: obj,
         };
       case actionTypes.create:

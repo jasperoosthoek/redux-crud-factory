@@ -7,7 +7,7 @@ export default (objectName, config, { mapActions }) => {
     byKey,
     parent,
     parentId,
-    includeState,
+    state: includeState,
     select,
     selectedId,
     selectedIds,
@@ -22,18 +22,17 @@ export default (objectName, config, { mapActions }) => {
   
   const mapIncludeStateAndActions = (state) => ({
     ...includeState
-      ?
-        Object.keys(includeState).reduce((obj, propName) => ({
+      ? Object.keys(includeState).reduce((obj, propName) => ({
             ...obj,
-            [propName]: state[propName],
+            [propName]: state.state[propName],
         }), {})
       : {},
     ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
       ...obj,
       ...isAsync
         ? {
-            [`${action}IsLoading`]: state[`${action}IsLoading`],
-            [`${action}Error`]: state[`${action}Error`],
+            [`${action}IsLoading`]: state.actions[action].isLoading,
+            [`${action}Error`]: state.actions[action].error,
           }
         : {},
     }), {}),
@@ -90,8 +89,8 @@ export default (objectName, config, { mapActions }) => {
             return (
               {
                 ...o,
-                [`${name}IsLoading`]: state[`${strippedName}IsLoading`],
-                [`${name}Error`]: state[`${strippedName}Error`],
+                [`${name}IsLoading`]: state.actions[strippedName].isLoading,
+                [`${name}Error`]: state.actions[strippedName].error,
               }
             )}, {}),
         ...actions.getList || (actions.getAll && (!!ownProps[parent] || ownProps[parent] === null))
@@ -168,8 +167,8 @@ export default (objectName, config, { mapActions }) => {
         ...parent && actions.getList
           ?
             {
-              [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAllIsLoading,
-              [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAllError,
+              [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAll.isLoading,
+              [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAll.error,
             }
           : {},
       }
