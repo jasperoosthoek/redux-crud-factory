@@ -12,10 +12,12 @@
     ],
     "devDependencies": {
         "@babel/cli": "^7.14.3",
-        "@babel/core": "^7.14.3",
-        "@babel/preset-env": "^7.14.4",
+        "@babel/core": "^7.18.6",
+        "@babel/preset-env": "^7.18.6",
         "@babel/register": "^7.13.16",
         "axios": "^0.21.0",
+        "babel-jest": "^28.1.3",
+        "jest": "^28.1.3",
         "redux": "^4.1.0"
     },
     "main": "./lib-cjs/index.js",
@@ -24,7 +26,8 @@
         "_build": "babel src --extensions '.js' --source-maps=true",
         "build:cjs": "NODE_ENV=production BABEL_ENV=cjs npm run _build -- --out-dir lib-cjs --delete-dir-on-start",
         "build:esm": "NODE_ENV=production BABEL_ENV=esm npm run _build -- --out-dir lib-esm --delete-dir-on-start",
-        "prepublishOnly": "npm install && npm run build:esm && npm run build:cjs"
+        "prepublishOnly": "npm install && npm run build:esm && npm run build:cjs",
+        "test": "jest"
     },
     "peerDependencies": {
         "react-redux": "^7.2.6"
