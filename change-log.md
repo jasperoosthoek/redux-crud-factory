@@ -87,10 +87,11 @@
 - Rename `config.includeState` to `config.state`
 - Refactor `actionTypes` from plain object to nested object with sub types
 - Simplify `reducerFactory` by handling all `isLoading`, `error` and `clearError` action sub types at once
-- Add `args`, `params`, `route` and `method` to loading state
+- Add `args`, `params`, `route` and `method` to loading state of dispatchable function
 
 ##### Version 0.3.1
 - Fix bug in handling `hooks` and map functions when parent is defined
+- All async methods from hooks now also have clearError function that is aware of parent state
 
 ##### Upcoming
 - Make isLoading etc specific when id is given to the hook

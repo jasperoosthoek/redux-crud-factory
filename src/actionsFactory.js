@@ -32,6 +32,34 @@ const CLEAR_LIST = 'CLEAR_LIST';
 const GET_ALL_IS_LOADING = 'GET_ALL_IS_LOADING';
 const GET_ALL_ERROR = 'GET_ALL_ERROR';
 
+export const getMapActions = objectName => {
+  const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
+
+  return (
+    {
+      get: `get${functionSingle}`,
+      set: `set${functionSingle}`,
+      clear: `clear${functionSingle}`,
+      getList: `get${functionPlural}List`,
+      setList: `set${functionPlural}List`,
+      clearList: `clear${functionPlural}List`,
+      create: `create${functionSingle}`,
+      set: `set${functionSingle}`,
+      update: `update${functionSingle}`,
+      delete: `delete${functionSingle}`,
+      getAll: `getAll${functionPlural}`,
+      setAll: `setAll${functionPlural}`,
+      clearAll: `clearAll${functionPlural}`,
+      // setState: `set${functionSingle}State`,
+      // clearState: `clear${functionSingle}State`,
+      select: `select${functionSingle}`,
+      unSelect: `unSelect${functionSingle}`,
+      selectAll: `selectAll${functionPlural}`,
+      unSelectAll: `unSelectAll${functionPlural}`,
+    }
+  );
+};
+
 const getActionTypes = (actionPrefix, actionName, actionSuffix) => ({
   [`${snakeToCamelCase(actionPrefix)}${actionSuffix ? toUpperCamelCase(actionSuffix) : ''}`]:
     `${actionPrefix}${actionName ? `_${actionName}` : ''}${actionSuffix ? `_${actionSuffix}` : ''}`,
@@ -251,7 +279,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     includeActions,
     state: includeState,
   } = config;
-  const { functionSingle, functionPlural } = formatActionAndFunctionNames(objectName);
   const actionTypes = formatActionTypes(objectName, config);
   
   const getParentObj = (obj) => {
@@ -636,27 +663,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     )
   ];
 
-  const mapActions = {
-    get: `get${functionSingle}`,
-    set: `set${functionSingle}`,
-    clear: `clear${functionSingle}`,
-    getList: `get${functionPlural}List`,
-    setList: `set${functionPlural}List`,
-    clearList: `clear${functionPlural}List`,
-    create: `create${functionSingle}`,
-    set: `set${functionSingle}`,
-    update: `update${functionSingle}`,
-    delete: `delete${functionSingle}`,
-    getAll: `getAll${functionPlural}`,
-    setAll: `setAll${functionPlural}`,
-    clearAll: `clearAll${functionPlural}`,
-    // setState: `set${functionSingle}State`,
-    // clearState: `clear${functionSingle}State`,
-    select: `select${functionSingle}`,
-    unSelect: `unSelect${functionSingle}`,
-    selectAll: `selectAll${functionPlural}`,
-    unSelectAll: `unSelectAll${functionPlural}`,
-  }
+  const mapActions = getMapActions(objectName);
 
   const asyncActionsStripped = asyncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})
   const syncActionsStripped = syncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})

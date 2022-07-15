@@ -1,18 +1,23 @@
 
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
+import { getMapSubState, getMapToProps } from './mappersFactory';
 
-export default (objectName, { byKey, parent }, {
-  mapToProps,
-  mapToPropsStripped,
+export default (objectName, config, {
   mapActions,
-  mapSubState,
   asyncActions,
   syncActions,
   asyncActionsStripped,
   syncActionsStripped,
   asyncActionsIncluded,
   syncActionsIncluded,
+  actionTypes,
 }) => {
+  const mapSubState = getMapSubState(objectName, config);
+  const mapToProps = getMapToProps(objectName, config, { stripped: false, loadingState: false });
+  const mapToPropsStripped = getMapToProps(objectName, config, { stripped: true, loadingState: false });
+
+  const { byKey, parent } = config;
+  
   const getUseFactory = stripped => props => {
     let { [byKey]: id, [parent]: parentId, ...restProps } = props || {};
     if (['string', 'number', 'bigint'].includes(typeof props)) {
@@ -49,7 +54,22 @@ export default (objectName, { byKey, parent }, {
     const subState = useSelector(state => mapSubState(state, { ...idObj, ...parentObj }));
     
     const dispatch = useDispatch();
-
+    
+    const assignAttributes = (dispatchableAction, actionName) => {
+      const loadingState = subState.actions[actionName];
+          
+      return Object.assign(
+        dispatchableAction,
+        {
+          ...loadingState,
+          clearError: 
+            () => dispatch({
+              type: actionTypes.clearError[actionName],
+              ...parent && typeof parentId !== 'undefined' ? { parent: parentId } : {}
+            }),
+        }
+      );
+    };
     return {
       ...obj,
       ...Object.entries(asyncActionsStripped).reduce(
@@ -74,15 +94,16 @@ export default (objectName, { byKey, parent }, {
           } else { 
               dispatchableAction = (...args) => dispatch(actionFunction(...args));
           }
-          Object.assign(dispatchableAction, subState.actions[actionName]);
           
-          return { ...o, [stripped ? actionName : mapActions[actionName]]: dispatchableAction };
+          assignAttributes(dispatchableAction, actionName);
+
+          return { ...o, [stripped ? actionName : mapActions[actionName] || actionName]: dispatchableAction };
         }, {}),
       ...Object.entries(asyncActionsIncluded).reduce(
         (o, [actionName, actionFunction]) => {
           const dispatchableAction = (...args) => dispatch(actionFunction(...args));
           
-          Object.assign(dispatchableAction, subState.actions[actionName]);
+          assignAttributes(dispatchableAction, actionName);
           
           return { ...o, [actionName]: dispatchableAction };
         }, {}),
