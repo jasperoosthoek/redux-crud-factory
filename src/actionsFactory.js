@@ -497,8 +497,8 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       // if (getFromState(getState, 'getAll', 'isLoading')) {
       //   return;
       // }
-      const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
       dispatch({
         type: actionTypes.isLoading.getAll,
         asyncState: { params, args, method, route: mergedAxiosConfig.url },
@@ -650,6 +650,8 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     getAll: `getAll${functionPlural}`,
     setAll: `setAll${functionPlural}`,
     clearAll: `clearAll${functionPlural}`,
+    // setState: `set${functionSingle}State`,
+    // clearState: `clear${functionSingle}State`,
     select: `select${functionSingle}`,
     unSelect: `unSelect${functionSingle}`,
     selectAll: `selectAll${functionPlural}`,

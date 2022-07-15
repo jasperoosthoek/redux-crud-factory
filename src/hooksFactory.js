@@ -5,6 +5,7 @@ export default (objectName, { byKey, parent }, {
   mapToProps,
   mapToPropsStripped,
   mapActions,
+  mapSubState,
   asyncActions,
   syncActions,
   asyncActionsStripped,
@@ -42,8 +43,11 @@ export default (objectName, { byKey, parent }, {
         : mapToProps(state, { ...idObj, ...parentObj }),
       shallowEqual
     );
-    // This contains all the loading & error state of each action
-    const actionsState = useSelector(state => state[objectName].actions);
+    // when parent and parentId are defined the result the state of this parentId: state[objectName].list[parentId]
+    // Otherwise, subState is just state[objectName]
+    // However, when parent is defined and parentId is not, all action functions (get, create etc) will not have any loading state
+    const subState = useSelector(state => mapSubState(state, { ...idObj, ...parentObj }));
+    
     const dispatch = useDispatch();
 
     return {
@@ -70,18 +74,19 @@ export default (objectName, { byKey, parent }, {
           } else { 
               dispatchableAction = (...args) => dispatch(actionFunction(...args));
           }
-          Object.assign(dispatchableAction, actionsState[actionName]);
+          Object.assign(dispatchableAction, subState.actions[actionName]);
           
           return { ...o, [stripped ? actionName : mapActions[actionName]]: dispatchableAction };
         }, {}),
       ...Object.entries(asyncActionsIncluded).reduce(
         (o, [actionName, actionFunction]) => {
           const dispatchableAction = (...args) => dispatch(actionFunction(...args));
-          Object.assign(dispatchableAction, actionsState[actionName]);
+          
+          Object.assign(dispatchableAction, subState.actions[actionName]);
           
           return { ...o, [actionName]: dispatchableAction };
         }, {}),
-      ...Object.entries({ ...syncActionsIncluded, ...stripped ? syncActionsStripped : syncActions })
+      ...Object.entries({ ...stripped ? syncActionsStripped : syncActions, ...syncActionsIncluded,  })
           .reduce((o, [actionName, actionFunction]) => (
             {
               ...o,

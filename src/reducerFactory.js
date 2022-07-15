@@ -277,7 +277,6 @@ export default (objectName, config = {}, { actionTypes }) => {
     recursive,
     selectedId,
   } = config;
-  // console.log(actionTypes)
 
   const subReducer = getSubReducer(objectName, config, actionTypes)
   const reducer = (state, action) => {
@@ -314,9 +313,9 @@ export default (objectName, config = {}, { actionTypes }) => {
         return setError(prevState, action, 'getAll');
       case actionTypes.error.getAll:
         return setClearError(prevState, action, 'getAll');
-      case actionTypes.clearAll:
+      case actionTypes.actions.clearAll:
         return initialStateRoot(config);
-      case actionTypes.setAll:
+      case actionTypes.actions.setAll:
         const obj = {};
         action.payload.map((o) => {
           if (!obj[o[parent]]) {

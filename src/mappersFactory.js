@@ -1,6 +1,8 @@
 import { formatActionAndFunctionNames } from './actionsFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
 
+
+
 export default (objectName, config, { mapActions }) => {
   const {
     id,
@@ -128,11 +130,27 @@ export default (objectName, config, { mapActions }) => {
   if (!parent) {
     // This is the default mapper
     return {
+      mapSubState: state => state[objectName],
       mapToProps: (state, ownProps) => getMapToProps(false)(state[objectName], ownProps),
       mapToPropsStripped: (state, ownProps) => getMapToProps(true)(state[objectName], ownProps),
     };
   }
-
+  
+  const mapSubState = (state, ownProps) => {
+    // If the parent key is not specified in ownProps then it is assumed to be null
+    if (!ownProps[parent] && ownProps[parent] !== null) {
+      return state[objectName];
+    }
+    const parentFromProp = ownProps[parseParentToInt ? parseInt(parent) : parent];
+    // When the parent is an object, retrieve the parentKey by using parentId from the object
+    const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
+    
+    return (
+      state[objectName].list !== null && !!state[objectName].list[parentKey]
+        ? state[objectName].list[parentKey]
+        : {}
+    )
+  }
   const getMapToPropsWithParent = stripped => (state, ownProps) => {
     
     if (typeof ownProps !== 'object') {
@@ -142,16 +160,12 @@ export default (objectName, config, { mapActions }) => {
     const parentFromProp = ownProps[parseParentToInt ? parseInt(parent) : parent];
     // When the parent is an object, retrieve the parentKey by using parentId from the object
     const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
-    return ({
-        // If the parent key is not specified in ownProps then it is assumed to be null
-        ...!!ownProps[parent] || ownProps[parent] === null
-          ? 
-            // Return child state by parent
-            state[objectName].list !== null && !!state[objectName].list[parentKey]
-              ? (
-                getMapToProps(stripped)(state[objectName].list[parentKey], ownProps)
-              )
-              : {}
+    
+    const subState = mapSubState(state, ownProps)
+    return (
+      {
+        ...ownProps[parent] || ownProps[parent] === null
+          ? getMapToProps(stripped)(subState, ownProps)
           :
             {
               // Return embedded list by [parent][key]
@@ -172,9 +186,11 @@ export default (objectName, config, { mapActions }) => {
             }
           : {},
       }
-    )}
+    );
+  }
 
   return {
+    mapSubState,
     mapToProps: getMapToPropsWithParent(false),
     mapToPropsStripped: getMapToPropsWithParent(true),
   };
