@@ -83,8 +83,8 @@
 
 ##### Version 0.3.0
 - Refactor state, all loading and error state in separate `actions` object
-- Manage `state` in separate `state` object
 - Rename `config.includeState` to `config.state`
+- Manage `config.state` in separate `state` object
 - Refactor `actionTypes` from plain object to nested object with sub types
 - Simplify `reducerFactory` by handling all `isLoading`, `error` and `clearError` action sub types at once
 - Add `args`, `params`, `route` and `method` to loading state of dispatchable function
