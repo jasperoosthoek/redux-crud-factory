@@ -96,8 +96,11 @@
 - Remove unneeded properties from result of hooks, i.e. `getFooIsLoading`
 - All async actions return silently when `isLoading` is true to prevent them from running twice
 - Rename `obj` property to `data`
+- Fix `config.parseParentToInt` property not working properly
 
 ##### Upcoming
+- Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook
 - Merge `includeActions` with `actions`
 - Move `config.actions.select` to `config.select`
+- Allow for parent state when `parent` is defined

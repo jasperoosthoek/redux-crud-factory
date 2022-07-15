@@ -296,7 +296,7 @@ export default (objectName, config = {}, { actionTypes }) => {
     );
 
     const prevState = {
-      ...state ? state : getInitialState(config),
+      ...state ? state : initialStateRoot(config),
       list: (action.parent || action.parent === null) && subState !== null
           // Only update [parentKey] when subState is not null because this might otherwise be triggered by another
           // reducer with the same parent key

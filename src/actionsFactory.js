@@ -303,7 +303,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? "${objectName}" action should have an object as value: { ${objectName}: { ... } }.`;
     }
     if (typeof state.actions[action] === 'undefined') {
-      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${action}": { ${objectName}: { ${action}: ... } }`;
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${action}": { actions: { ${objectName}: { ${action}: ... } } }`;
     }
     return state.actions[action] && state.actions[action].isLoading;
   }
@@ -570,7 +570,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     }),
   };
 
-  const asyncActionsIncluded = Object.entries(includeActions)
+  const asyncActionsIncludedActions = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError, axiosConfig }]) =>
       ({
@@ -620,14 +620,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       }),
       {}
     );
-  const syncActionsIncluded = Object.entries(includeActions)
+  const syncActionsIncludedActions = Object.entries(includeActions)
     .filter(([action, { isAsync }]) => isAsync)
     .reduce((o, [action]) =>
       ({
         ...o,
         [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.error[action] }),
       }), {});
-  const syncActionsStateIncluded = Object.entries(includeState).reduce(
+  const syncActionsIncludedState = Object.entries(includeState).reduce(
     (o, [propName]) => {
       const propNameTitleCase = titleCase(propName);
       const actionTypes = getActionTypesIncludeState(propName, objectName)
@@ -656,7 +656,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ...actions.delete ? ['delete'] : [],
       ...parent && actions.getAll ? ['getAll'] : [],
     ];
-  const asyncActionsIncludedList = Object.keys(asyncActionsIncluded);
   const syncActionsList = [
     'set',
     'clear',
@@ -665,57 +664,69 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
     ...parent && actions.getAll ? ['setAll', 'clearAll'] : [],
   ];
-  const syncActionsStateIncludedList = Object.keys(syncActionsStateIncluded);
+
+  const actionsList = (
+    [].concat(
+      asyncActionsList,
+      syncActionsList,
+      Object.keys(syncActionsIncludedActions),
+      Object.keys(asyncActionsIncludedActions),
+      Object.keys(syncActionsIncludedState),
+    )
+  );
 
   const mapActions = getMapActions(objectName);
 
   const asyncActionsStripped = {
     ...asyncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
-    ...asyncActionsIncluded,
+    ...asyncActionsIncludedActions,
   }
   const syncActionsStripped = {
     ...syncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
-    ...syncActionsStateIncluded,
+    ...syncActionsIncludedState,
   };
 
   const asyncActions = {
     ...asyncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
-    ...asyncActionsIncluded,
+    ...asyncActionsIncludedActions,
   };
   const syncActions = {
     ...syncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
-    ...syncActionsStateIncluded,
+    ...syncActionsIncludedState,
   };
-  
   const returnObj = {
     mapActions,
     actionsStripped: {
       ...asyncActionsStripped,
       ...syncActionsStripped,
-      ...asyncActionsIncluded,
-      ...syncActionsIncluded,
-      ...syncActionsStateIncluded,
+      ...asyncActionsIncludedActions,
+      ...syncActionsIncludedActions,
+      ...syncActionsIncludedState,
     },
     asyncActions,
     syncActions,
     asyncActionsStripped,
     syncActionsStripped,
-    asyncActionsIncluded,
-    ...syncActionsIncluded,
-    syncActionsStateIncluded,
+    asyncActionsIncludedActions,
+    syncActionsIncludedActions,
+    syncActionsIncludedState,
     actionTypes,
     actions: {
       ...asyncActions,
       ...syncActions,
-      ...asyncActionsIncluded,
-      ...syncActionsIncluded,
-      ...syncActionsStateIncluded,
+      ...asyncActionsIncludedActions,
+      ...syncActionsIncludedActions,
+      ...syncActionsIncludedState,
     },
   }
 
-  
-  const actionsList = asyncActionsList.concat(syncActionsList, asyncActionsIncludedList, syncActionsStateIncludedList);
-  
+  const allActionFunctions = {
+    ...actionFunctions,
+    ...asyncActionsIncludedActions,
+    ...syncActionsIncludedActions,
+    ...syncActionsIncludedState
+  };
+
   // actionDispatchers and actionDispatchersStripped are created after the actionFunctions are created and returned to caller.
   // There, actionDispatchers of all factories are combined and can be obtained using:
   // getAllActionDispatchers(dispatch) to obtain the full name actions (e.g. getFooList) of all factories
@@ -723,11 +734,10 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   const actionDispatchers = dispatch => Object.fromEntries(
     actionsList.map(action => [
       mapActions[action] || action,
-      (...args) => dispatch(actionFunctions[action](...args)),
+      (...args) => dispatch(allActionFunctions[action](...args)),
     ])
   );
 
-  const allActionFunctions = { ...actionFunctions, ...asyncActionsIncluded, ...syncActionsIncluded, ...syncActionsStateIncluded };
   const actionDispatchersStripped = dispatch => Object.fromEntries(
     actionsList.map(action => [
       action,

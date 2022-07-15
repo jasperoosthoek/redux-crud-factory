@@ -1,8 +1,9 @@
 import { formatActionAndFunctionNames, getMapActions } from './actionsFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
 // If parent is defined and the parent key is not specified in ownProps then it is assumed to be null
-export const getReturnParentState = ({ parent }) => ownProps => !!parent && !ownProps[parent] && ownProps[parent] !== null
-
+export const getReturnParentState = ({ parent }) => ownProps => (
+  parent && (!ownProps || (!ownProps[parent] && ownProps[parent] !== null))
+);
 // Maps the substate or returns the parent state
 export const getMapSubState = (objectName, config) => {
   const { parent, parentId, parseParentToInt } = config;
@@ -16,10 +17,21 @@ export const getMapSubState = (objectName, config) => {
       if (returnParentState(ownProps)) {
         return state[objectName];
       }
-      const parentFromProp = ownProps[parseParentToInt ? parseInt(parent) : parent];
-      // When the parent is an object, retrieve the parentKey by using parentId from the object
-      const parentKey = parentFromProp !== null && typeof parentFromProp === 'object' ? parentFromProp[parentId] : parentFromProp
-      
+      const parentFromProp = ownProps[parent];
+      const parentKey = (
+        parentFromProp === null
+        ? null
+        : typeof parentFromProp === 'object' 
+        // When the parent is an object, retrieve the parentKey by using parentId from the object
+        ? (parseParentToInt
+            ? parseInt(parentFromProp[parentId])
+            : parentFromProp[parentId]
+          )
+        : (parseParentToInt
+            ? parseInt(parentFromProp)
+            : parentFromProp
+          )
+      );
       return (
         state[objectName].list !== null && !!state[objectName].list[parentKey]
           ? state[objectName].list[parentKey]
@@ -93,8 +105,8 @@ export const getMapToProps = (objectName, config, { stripped, loadingState=true 
                 ...loadingState && actions.getList
                 ?
                   {
-                    [`getAll${stripped ? '' : functionPlural}IsLoading`]: state[objectName].getAll.isLoading,
-                    [`getAll${stripped ? '' : functionPlural}Error`]: state[objectName].getAll.error,
+                    [`getAll${stripped ? '' : functionPlural}IsLoading`]: state.actions.getAll.isLoading,
+                    [`getAll${stripped ? '' : functionPlural}Error`]: state.actions.getAll.error,
                   }
                 : {},
               }
@@ -172,18 +184,8 @@ export const getMapToProps = (objectName, config, { stripped, loadingState=true 
 
 export default (objectName, config, { mapActions }) => {
   const {
-    id,
     byKey,
     parent,
-    parentId,
-    state: includeState,
-    select,
-    selectedId,
-    selectedIds,
-    actions,
-    includeActions,
-    parseIdToInt,
-    parseParentToInt,
   } = config;
   const { functionSingle, functionPlural, camelCaseNameSingle } = formatActionAndFunctionNames(objectName);
   const camelCaseId = toUpperCamelCase(byKey);

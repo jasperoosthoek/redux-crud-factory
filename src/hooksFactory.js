@@ -8,8 +8,8 @@ export default (objectName, config, {
   syncActions,
   asyncActionsStripped,
   syncActionsStripped,
-  asyncActionsIncluded,
-  syncActionsStateIncluded,
+  asyncActionsIncludedActions,
+  syncActionsIncludedState,
   actionTypes,
 }) => {
   const mapSubState = getMapSubState(objectName, config);
@@ -56,7 +56,8 @@ export default (objectName, config, {
     const dispatch = useDispatch();
     
     const assignAttributes = (dispatchableAction, actionName) => {
-      const loadingState = subState.actions[actionName];
+      // console.log(actionName, subState.actions)
+      const loadingState = subState.actions && subState.actions[actionName];
           
       return Object.assign(
         dispatchableAction,
@@ -99,7 +100,7 @@ export default (objectName, config, {
 
           return { ...o, [stripped ? actionName : mapActions[actionName] || actionName]: dispatchableAction };
         }, {}),
-      ...Object.entries(asyncActionsIncluded).reduce(
+      ...Object.entries(asyncActionsIncludedActions).reduce(
         (o, [actionName, actionFunction]) => {
           const dispatchableAction = (...args) => dispatch(actionFunction(...args));
           
@@ -107,7 +108,7 @@ export default (objectName, config, {
           
           return { ...o, [actionName]: dispatchableAction };
         }, {}),
-      ...Object.entries({ ...stripped ? syncActionsStripped : syncActions, ...syncActionsStateIncluded,  })
+      ...Object.entries({ ...stripped ? syncActionsStripped : syncActions, ...syncActionsIncludedState,  })
           .reduce((o, [actionName, actionFunction]) => (
             {
               ...o,
