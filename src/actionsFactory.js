@@ -1,5 +1,6 @@
 
 import { callIfFunc, camelToSnakeCase, snakeToCamelCase, toUpperCamelCase, pluralToSingle, titleCase } from './utils';
+import { getMapSubState } from './mappersFactory';
 
 const IS_LOADING = 'IS_LOADING';
 const ERROR = 'ERROR';
@@ -253,14 +254,14 @@ const formatActionTypes = (objectName, config) => {
 
 // Convert a list route, e.g '/api/foo' into a detail route '/api/foo/42'
 // Note that trailing slashes are handled automatically: '/api/foo/' becomes '/api/foo/42/'
-export const getDetailRoute = (route, id) => obj =>
-  // To do: assertions for obj, route and id
+export const getDetailRoute = (route, id) => data =>
+  // To do: assertions for data, route and id
   `${
     route
   }${
     route.endsWith('/') ? '' : '/'
   }${
-    typeof obj === 'object' ? obj[id] : obj
+    typeof data === 'object' ? data[id] : data
   }${
     route.endsWith('/') ? '/' : ''
   }`;
@@ -281,16 +282,20 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   } = config;
   const actionTypes = formatActionTypes(objectName, config);
   
-  const getParentObj = (obj) => {
-    // If parent is defined, the parent is taken from the obj. Otherwise an empty object ({}) is returned
+  const getParentObj = data => {
+    // If parent is defined, the parent is taken from the data. Otherwise an empty object ({}) is returned
     if (!parent) return {};
-    const parentFromObj = obj[parent];
+    const parentFromObj = data[parent];
     // Allow parent in object to be an object itself, if so the id is found by parentId
     return { 'parent': parentFromObj !== null && typeof parentFromObj === 'object' ? parentFromObj[parentId] : parentFromObj }
   }
   
-  const getFromState = (getState, action, key) => {
-    const state = getState()[objectName];
+  const mapSubState = getMapSubState(objectName, config);
+  const getIsLoadingFromState = (fullState, action, data) => {
+    if (typeof fullState === 'undefined') {
+      throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" action" Initial state should include { ${objectName}: { ... } } object.`;
+    }
+    const state = mapSubState(fullState, data);
     if (typeof state === 'undefined') {
       throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? Missing "${objectName}" action" Initial state should include { ${objectName}: { ... } } object.`;
     }
@@ -300,17 +305,17 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     if (typeof state.actions[action] === 'undefined') {
       throw `ReduxCrudFactory: Redux state has not been properly initialized. Did you register the reducer? State should include "${action}": { ${objectName}: { ${action}: ... } }`;
     }
-    return state.actions[action][key];
+    return state.actions[action] && state.actions[action].isLoading;
   }
 
   // Generic call to Axios which handles multiple methods and route & prepare functions
-  const getAxiosConfig = ({ method, route, params, obj, original, axiosConfig={}, args, getState, prepare }) => ({
+  const getAxiosConfig = ({ method, route, params, data, original, axiosConfig={}, args, getState, prepare }) => ({
     ...axiosConfig,
     method,
-    url: typeof route === 'function' ? route(original ? original : obj, { args, getState, params }) : route, 
+    url: typeof route === 'function' ? route(original ? original : data, { args, getState, params }) : route, 
     params,
-    ...obj
-      ? { data: typeof prepare === 'function' ? prepare(obj, { args, getState, params }) : obj }
+    ...data
+      ? { data: typeof prepare === 'function' ? prepare(data, { args, getState, params }) : data }
       : {},
   });
   
@@ -323,17 +328,16 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   });
 
   const actionFunctions = {
-    get: (obj, { params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'getIsLoading')) {
-        return;
-      }
+    get: (data, { params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(getState(), 'get')) return;
+
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.get;
       
-      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });  
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });  
       dispatch({
         type: actionTypes.isLoading.get,
-        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
-        ...getParentObj(typeof obj === 'object' ? obj : params, parent),
+        asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(typeof data === 'object' ? data : params, parent),
       });
       try {
         const response = await axios(mergedAxiosConfig);
@@ -353,9 +357,8 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       };
     },
     getList: ({ params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getFromState(getState, 'getList', 'isLoading')) {
-        return;
-      }
+      if (getIsLoadingFromState(getState(), 'getList')) return;
+      
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
       const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
       dispatch({
@@ -395,40 +398,39 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callerOnError, error);
       };
     },
-    set: (obj) => dispatch => dispatch({
+    set: data => dispatch => dispatch({
       type: actionTypes.actions.set,
-      payload: obj,
-      ...getParentObj(obj),
+      payload: data,
+      ...getParentObj(data),
     }),
-    clear: (obj) => dispatch => dispatch({
+    clear: data => dispatch => dispatch({
       type: actionTypes.actions.clear,
-      payload: obj,
-      ...getParentObj(obj),
+      payload: data,
+      ...getParentObj(data),
     }),
-    setList: (obj) => dispatch => dispatch({
+    setList: data => dispatch => dispatch({
       type: actionTypes.actions.setList,
-      payload: obj,
-      ...getParentObj(obj),
+      payload: data,
+      ...getParentObj(data),
     }),
-    setAll: (obj) => dispatch => dispatch({
+    setAll: data => dispatch => dispatch({
       type: actionTypes.actions.setAll,
-      payload: obj,
+      payload: data,
     }),
-    clearList: (obj) => dispatch => dispatch({
+    clearList: data => dispatch => dispatch({
       // Get parent from ownProps
       type: actionTypes.actions.clearList,
-      ...getParentObj(obj),
+      ...getParentObj(data),
     }),
-    create: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'create', 'isLoading')) {
-      //   return;
-      // }
+    create: (data, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(getState(), 'create', data)) return;
+
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.create;
-      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });
       dispatch({
         type: actionTypes.isLoading.create,
-        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
-        ...getParentObj(obj, parent),
+        asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(data, parent),
       });
       try {
         const response = await axios(mergedAxiosConfig);
@@ -441,23 +443,22 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callback, response.data, combineActionDispatchers(dispatch));
         return response.data
       } catch (error) {
-        dispatch({ type: actionTypes.error.create, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.create, ...getParentObj(data, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
-    update: (obj, { original, callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'update', 'isLoading')) {
-      //   return;
-      // }
+    update: (data, { original, callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(getState(), 'update', data)) return;
+      
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.update;
       
-      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, original, axiosConfig, getState, args, prepare });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, original, axiosConfig, getState, args, prepare });
       dispatch({
         type: actionTypes.isLoading.update,
-        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
-        ...getParentObj(original ? original : obj, parent),
+        asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(original ? original : data, parent),
       });
       try {
         const response = await axios(mergedAxiosConfig);
@@ -473,7 +474,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         dispatch({
           type: actionTypes.actions.update,
           payload: response.data,
-          ...getParentObj(obj, parent),
+          ...getParentObj(data, parent),
           // Send unmutable id to be able to remove the object if byKey has changed
           key: typeof original === 'object' ? original[byKey] || null : null,
           id: typeof original === 'object' ? original[id] || null : null,
@@ -484,7 +485,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       } catch (error) {
         dispatch({
           type: actionTypes.error.update,
-          ...getParentObj(obj, parent),
+          ...getParentObj(data, parent),
           payload: error,
         });
         callIfFunc(globalOnError, error);
@@ -492,38 +493,36 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callerOnError, error);
       };
     },
-    delete: (obj, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'delete', 'isLoading')) {
-      //   return;
-      // }
+    delete: (data, { callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(getState(), 'delete', data)) return;
+      
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.delete;
-      const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, prepare });
+      const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });
       dispatch({
         type: actionTypes.isLoading.delete,
-        asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
-        ...getParentObj(obj, parent),
+        asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
+        ...getParentObj(data, parent),
       });
       try {
         const response = await axios(mergedAxiosConfig);
         dispatch({
           type: actionTypes.actions.clear,
-          payload: obj,
-          ...getParentObj(obj),
+          payload: data,
+          ...getParentObj(data),
         });
         callIfFunc(actionCallback, combineActionDispatchers(dispatch));
         callIfFunc(callback, combineActionDispatchers(dispatch));
         return true;
       } catch (error) {
-        dispatch({ type: actionTypes.error.delete, ...getParentObj(obj, parent), payload: error });
+        dispatch({ type: actionTypes.error.delete, ...getParentObj(data, parent), payload: error });
         callIfFunc(globalOnError, error);
         callIfFunc(actionOnError, error);
         callIfFunc(callerOnError, error);
       };
     },
     getAll : ({ callback, onError: callerOnError, params, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      // if (getFromState(getState, 'getAll', 'isLoading')) {
-      //   return;
-      // }
+      if (getIsLoadingFromState(getState(), 'getAll')) return;
+      
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.getAll;
       const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
       dispatch({
@@ -549,24 +548,24 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     clearAll: () => dispatch => dispatch({
       type: actionTypes.actions.clearAll,
     }),
-    select: obj => (dispatch) => dispatch({
+    select: data => (dispatch) => dispatch({
         type: actionTypes.actions.select,
-        payload: obj,
-        ...getParentObj(obj),
+        payload: data,
+        ...getParentObj(data),
       }),
-    unSelect: obj => (dispatch, ownProps) => dispatch({
+    unSelect: data => (dispatch, ownProps) => dispatch({
       type: actionTypes.actions.unSelect,
-      ...actions.select === 'multiple' ? { payload: obj } : {},
+      ...actions.select === 'multiple' ? { payload: data } : {},
       ...getParentObj(ownProps),
     }),
-    selectAll: obj => (dispatch, ownProps) => dispatch({
+    selectAll: data => (dispatch, ownProps) => dispatch({
       type: actionTypes.actions.selectAll,
-      payload: obj,
+      payload: data,
       ...getParentObj(ownProps),
     }),
-    unSelectAll: obj => (dispatch, ownProps) => dispatch({
+    unSelectAll: data => (dispatch, ownProps) => dispatch({
       type: actionTypes.actions.unSelectAll,
-      payload: obj,
+      payload: data,
       ...getParentObj(ownProps),
     }),
   };
@@ -576,19 +575,20 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     .reduce((o, [action, { isAsync, route, method = 'get', prepare, onResponse, parent: customParent, onError: onCustomError, axiosConfig }]) =>
       ({
         ...o,
-        [action]: (obj, { params, callback, onError: callerOnError, args } = {}) =>
+        [action]: (data, { params, callback, onError: callerOnError, args } = {}) =>
           async (dispatch, getState) => {
+            if (getIsLoadingFromState(getState(), action, data)) return;
             const parentObj = !customParent
-              ? getParentObj(obj, parent)
+              ? getParentObj(data, parent)
               : { 
                   parent: typeof customParent === 'function'
-                    ? customParent(obj, { args, getState, params })
+                    ? customParent(data, { args, getState, params })
                     : customParent
                 };
-            const mergedAxiosConfig = getAxiosConfig({ method, route, params, obj, axiosConfig, getState, args, obj, prepare });
+            const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });
             dispatch({
               type: actionTypes.isLoading[action],
-              asyncState: { obj, params, args, method, route: mergedAxiosConfig.url },
+              asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
               ...parentObj,
             });
 
@@ -600,7 +600,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
                 onResponse,
                 response.data,
                 {
-                  obj,
+                  data,
                   args,
                   dispatch,
                   getState,
@@ -617,11 +617,17 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
               callIfFunc(callerOnError, error);
             };
           },
-        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.error[action] }),
       }),
       {}
     );
-  const syncActionsIncluded = Object.entries(includeState).reduce(
+  const syncActionsIncluded = Object.entries(includeActions)
+    .filter(([action, { isAsync }]) => isAsync)
+    .reduce((o, [action]) =>
+      ({
+        ...o,
+        [`${action}ClearError`]: () => dispatch => dispatch({ type: actionTypes.error[action] }),
+      }), {});
+  const syncActionsStateIncluded = Object.entries(includeState).reduce(
     (o, [propName]) => {
       const propNameTitleCase = titleCase(propName);
       const actionTypes = getActionTypesIncludeState(propName, objectName)
@@ -640,7 +646,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
             }),
         }
       );
-    }, {})
+    }, {});
   
   const asyncActionsList = [
       ...actions.get ? ['get'] : [],
@@ -649,8 +655,8 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ...actions.update ? ['update'] : [],
       ...actions.delete ? ['delete'] : [],
       ...parent && actions.getAll ? ['getAll'] : [],
-      ...Object.keys(includeActions),
-  ];
+    ];
+  const asyncActionsIncludedList = Object.keys(asyncActionsIncluded);
   const syncActionsList = [
     'set',
     'clear',
@@ -658,18 +664,28 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     ...actions.select ? ['select', 'unSelect'] : [],
     ...actions.select === 'multiple' ? ['selectAll', 'unSelectAll']: [],
     ...parent && actions.getAll ? ['setAll', 'clearAll'] : [],
-    ...Object.keys(includeState).reduce((o, propName) =>
-      [ ...o, `set${titleCase(propName)}`, `clear${titleCase(propName)}`], []
-    )
   ];
+  const syncActionsStateIncludedList = Object.keys(syncActionsStateIncluded);
 
   const mapActions = getMapActions(objectName);
 
-  const asyncActionsStripped = asyncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})
-  const syncActionsStripped = syncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {})
+  const asyncActionsStripped = {
+    ...asyncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
+    ...asyncActionsIncluded,
+  }
+  const syncActionsStripped = {
+    ...syncActionsList.reduce((o, action) => ({ ...o, [action]: actionFunctions[action]}), {}),
+    ...syncActionsStateIncluded,
+  };
 
-  const asyncActions = asyncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {});
-  const syncActions = syncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {});
+  const asyncActions = {
+    ...asyncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
+    ...asyncActionsIncluded,
+  };
+  const syncActions = {
+    ...syncActionsList.reduce((o, action) => ({ ...o, [mapActions[action]]: actionFunctions[action]}), {}),
+    ...syncActionsStateIncluded,
+  };
   
   const returnObj = {
     mapActions,
@@ -678,24 +694,27 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
       ...syncActionsStripped,
       ...asyncActionsIncluded,
       ...syncActionsIncluded,
+      ...syncActionsStateIncluded,
     },
     asyncActions,
     syncActions,
     asyncActionsStripped,
     syncActionsStripped,
     asyncActionsIncluded,
-    syncActionsIncluded,
+    ...syncActionsIncluded,
+    syncActionsStateIncluded,
     actionTypes,
     actions: {
       ...asyncActions,
       ...syncActions,
       ...asyncActionsIncluded,
       ...syncActionsIncluded,
+      ...syncActionsStateIncluded,
     },
   }
 
   
-  const actionsList = asyncActionsList.concat(syncActionsList);
+  const actionsList = asyncActionsList.concat(syncActionsList, asyncActionsIncludedList, syncActionsStateIncludedList);
   
   // actionDispatchers and actionDispatchersStripped are created after the actionFunctions are created and returned to caller.
   // There, actionDispatchers of all factories are combined and can be obtained using:
@@ -708,7 +727,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     ])
   );
 
-  const allActionFunctions = { ...actionFunctions, ...asyncActionsIncluded, ...syncActionsIncluded };
+  const allActionFunctions = { ...actionFunctions, ...asyncActionsIncluded, ...syncActionsIncluded, ...syncActionsStateIncluded };
   const actionDispatchersStripped = dispatch => Object.fromEntries(
     actionsList.map(action => [
       action,

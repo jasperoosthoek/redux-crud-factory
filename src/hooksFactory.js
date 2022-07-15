@@ -9,7 +9,7 @@ export default (objectName, config, {
   asyncActionsStripped,
   syncActionsStripped,
   asyncActionsIncluded,
-  syncActionsIncluded,
+  syncActionsStateIncluded,
   actionTypes,
 }) => {
   const mapSubState = getMapSubState(objectName, config);
@@ -107,7 +107,7 @@ export default (objectName, config, {
           
           return { ...o, [actionName]: dispatchableAction };
         }, {}),
-      ...Object.entries({ ...stripped ? syncActionsStripped : syncActions, ...syncActionsIncluded,  })
+      ...Object.entries({ ...stripped ? syncActionsStripped : syncActions, ...syncActionsStateIncluded,  })
           .reduce((o, [actionName, actionFunction]) => (
             {
               ...o,

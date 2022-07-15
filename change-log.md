@@ -91,11 +91,13 @@
 
 ##### Version 0.3.1
 - Fix bug in handling `hooks` and map functions when parent is defined
-- All async methods from hooks now also have clearError function that is aware of parent state
+- All async methods from hooks, like `getFoo()`, now also have `getFoo.clearError()` property function that is aware of parent state
+- Fix hooks not supplying `undefined` state setters functions
+- Remove unneeded properties from result of hooks, i.e. `getFooIsLoading`
+- All async actions return silently when `isLoading` is true to prevent them from running twice
+- Rename `obj` property to `data`
 
 ##### Upcoming
 - Make isLoading etc specific when id is given to the hook
 - Merge `includeActions` with `actions`
 - Move `config.actions.select` to `config.select`
-- New `setState` action to overrides complete state or part of state similar to class based React components
-- New `clearState` action to reset state to initial state
