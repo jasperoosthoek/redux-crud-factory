@@ -15,7 +15,6 @@ export default (objectName, config, {
   const mapSubState = getMapSubState(objectName, config);
   const mapToProps = getMapToProps(objectName, config, { stripped: false, loadingState: false });
   const mapToPropsStripped = getMapToProps(objectName, config, { stripped: true, loadingState: false });
-  const returnParentState = getReturnParentState(config)
 
   const { byKey, parent } = config;
   
@@ -53,13 +52,10 @@ export default (objectName, config, {
     // Otherwise, subState is just state[objectName]
     // However, when parent is defined and parentId is not, all action functions (get, create etc) will not have any loading state
     const subState = useSelector(state => mapSubState(state, { ...idObj, ...parentObj }));
-    // console.log(objectName, {id, parentId, subState})
-    // console.log(objectName, { asyncActions, actionTypes }, returnParentState({ ...idObj, ...parentObj }));
 
     const dispatch = useDispatch();
     
     const assignAttributes = (dispatchableAction, actionName) => {
-      // console.log(actionName, subState.actions)
       const loadingState = subState.actions && subState.actions[actionName];
           
       return Object.assign(
@@ -76,37 +72,33 @@ export default (objectName, config, {
     };
     return {
       ...obj,
-      ...returnParentState({ ...idObj, ...parentObj })
-        ? {}
-        :  {
-            ...Object.entries(asyncActionsStripped).reduce(
-              (o, [actionName, actionFunction]) => {
-                let dispatchableAction;
-                if (actionName === 'create') {
-                  dispatchableAction = (obj = {}, ...restArgs) =>
-                    dispatch(actionFunction({ ...parentObj, ...obj }, ...restArgs)
-                  );
-                } else if (actionName === 'update') {
-                  dispatchableAction = (obj = {}, ...restArgs) =>
-                    dispatch(actionFunction({ ...idObj, ...parentObj, ...obj }, ...restArgs)
-                  );
-                } else if (actionName === 'delete') {
-                  dispatchableAction = (obj = {}, ...restArgs) =>
-                    dispatch(actionFunction({
-                      ...idObj,
-                      ...parentObj,
-                      ...typeof obj === 'object' ? obj : { byKey: obj },
-                    }, ...restArgs)
-                  );
-                } else { 
-                    dispatchableAction = (...args) => dispatch(actionFunction(...args));
-                }
-                
-                assignAttributes(dispatchableAction, actionName);
+      ...Object.entries(asyncActionsStripped).reduce(
+        (o, [actionName, actionFunction]) => {
+          let dispatchableAction;
+          if (actionName === 'create') {
+            dispatchableAction = (obj = {}, ...restArgs) =>
+              dispatch(actionFunction({ ...parentObj, ...obj }, ...restArgs)
+            );
+          } else if (actionName === 'update') {
+            dispatchableAction = (obj = {}, ...restArgs) =>
+              dispatch(actionFunction({ ...idObj, ...parentObj, ...obj }, ...restArgs)
+            );
+          } else if (actionName === 'delete') {
+            dispatchableAction = (obj = {}, ...restArgs) =>
+              dispatch(actionFunction({
+                ...idObj,
+                ...parentObj,
+                ...typeof obj === 'object' ? obj : { byKey: obj },
+              }, ...restArgs)
+            );
+          } else { 
+              dispatchableAction = (...args) => dispatch(actionFunction(...args));
+          }
+          
+          assignAttributes(dispatchableAction, actionName);
 
-                return { ...o, [stripped ? actionName : mapActions[actionName] || actionName]: dispatchableAction };
-              }, {}),
-          },
+          return { ...o, [stripped ? actionName : mapActions[actionName] || actionName]: dispatchableAction };
+        }, {}),
       ...Object.entries(asyncActionsIncludedActions).reduce(
         (o, [actionName, actionFunction]) => {
           const dispatchableAction = (...args) => dispatch(actionFunction(...args));
