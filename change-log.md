@@ -98,6 +98,9 @@
 - Rename `obj` property to `data`
 - Fix `config.parseParentToInt` property not working properly
 
+##### Version 0.3.2
+- Fix `mapToProps` not working correctly when returning parent state
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook

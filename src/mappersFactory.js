@@ -1,5 +1,6 @@
 import { formatActionAndFunctionNames, getMapActions } from './actionsFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
+import { getInitialState } from './reducerFactory';
 // If parent is defined and the parent key is not specified in ownProps then it is assumed to be null
 export const getReturnParentState = ({ parent }) => ownProps => (
   parent && (!ownProps || (!ownProps[parent] && ownProps[parent] !== null))
@@ -8,8 +9,9 @@ export const getReturnParentState = ({ parent }) => ownProps => (
 export const getMapSubState = (objectName, config) => {
   const { parent, parentId, parseParentToInt } = config;
 
+  const initialState = getInitialState(config);
   if (!parent) {
-    return state => state[objectName];
+    return state => state[objectName] || initialState;
   }
   const returnParentState = getReturnParentState(config)
   return (
@@ -35,7 +37,7 @@ export const getMapSubState = (objectName, config) => {
       return (
         state[objectName].list !== null && !!state[objectName].list[parentKey]
           ? state[objectName].list[parentKey]
-          : {}
+          : initialState
       )
     }
   );
@@ -86,7 +88,6 @@ export const getMapToProps = (objectName, config, { stripped, loadingState=true 
   return (
     (fullState = {}, ownProps = {}) => {
       const state = mapSubState(fullState, ownProps);
-
       return (
         {
           ...returnParentState(ownProps)
@@ -105,8 +106,8 @@ export const getMapToProps = (objectName, config, { stripped, loadingState=true 
                 ...loadingState && actions.getList
                 ?
                   {
-                    [`getAll${stripped ? '' : functionPlural}IsLoading`]: state.actions.getAll.isLoading,
-                    [`getAll${stripped ? '' : functionPlural}Error`]: state.actions.getAll.error,
+                    [`getAll${stripped ? '' : functionPlural}IsLoading`]: fullState[objectName].actions.getAll.isLoading,
+                    [`getAll${stripped ? '' : functionPlural}Error`]: fullState[objectName].actions.getAll.error,
                   }
                 : {},
               }

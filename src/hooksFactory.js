@@ -1,6 +1,6 @@
 
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
-import { getMapSubState, getMapToProps } from './mappersFactory';
+import { getMapSubState, getMapToProps, getReturnParentState } from './mappersFactory';
 
 export default (objectName, config, {
   mapActions,
@@ -52,11 +52,10 @@ export default (objectName, config, {
     // Otherwise, subState is just state[objectName]
     // However, when parent is defined and parentId is not, all action functions (get, create etc) will not have any loading state
     const subState = useSelector(state => mapSubState(state, { ...idObj, ...parentObj }));
-    
+
     const dispatch = useDispatch();
     
     const assignAttributes = (dispatchableAction, actionName) => {
-      // console.log(actionName, subState.actions)
       const loadingState = subState.actions && subState.actions[actionName];
           
       return Object.assign(
