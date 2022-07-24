@@ -1,4 +1,3 @@
-import * as rcf from '../src/index';
 
 const sum = (a, b) => {
     return a + b;
