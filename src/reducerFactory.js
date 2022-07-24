@@ -13,7 +13,7 @@ const initialStateRoot = ({ state }) => ({
   state,
 });
 
-const getInitialState = ({
+export const getInitialState = ({
   selectedId,
   selectedIds,
   actions,
