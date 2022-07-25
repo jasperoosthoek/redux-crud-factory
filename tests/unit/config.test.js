@@ -31,11 +31,12 @@ console.log(expect, factory);
 // });
 
 test('factory keys', () => {
+  // Test using Set so order is not taken into account
   expect(new Set(Object.keys(factory))).toMatchObject(new Set([
     'mapActions',
-    'actionsStripped',
     'asyncActions',
     'syncActions',
+    'actionsStripped',
     'asyncActionsStripped',
     'syncActionsStripped',
     'asyncActionsIncludedActions',
