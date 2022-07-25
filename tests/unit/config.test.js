@@ -14,10 +14,41 @@ const factory = reduxCrudFactory({
     users: {
       route: '/api/users/',
     },
+    fooCategories: {
+      route: () => '/api/categories',
+      actions: {
+        getList: true,
+        update: {
+          route: obj => `/api/something-else/${obj.id}/update`,
+        }
+      }
+    }
   },
 });
-console.log(expect)
-test('Dummy', () => {
-  expect(1 + 2).toBe(3);
+console.log(expect, factory);
+// test('factory keys', () => {
+//   expect(1 + 2).toBe(3);
+// });
+
+test('factory keys', () => {
+  expect(new Set(Object.keys(factory))).toMatchObject(new Set([
+    'mapActions',
+    'actionsStripped',
+    'asyncActions',
+    'syncActions',
+    'asyncActionsStripped',
+    'syncActionsStripped',
+    'asyncActionsIncludedActions',
+    'syncActionsIncludedActions',
+    'syncActionsIncludedState',
+    'actionTypes',
+    'actions',
+    'config',
+    'mapToProps',
+    'mapToPropsStripped',
+    'hooks',
+    'hooksStripped',
+    'reducers',
+  ]));
 });
 
