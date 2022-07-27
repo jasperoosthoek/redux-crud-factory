@@ -185,7 +185,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             ...prevActions,
             // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
             ...getAsyncInitialState('get'),
-            ...getAsyncInitialState('clear'),
+            ...getAsyncInitialState('create'),
           },
         };
       case actionTypes.actions.update:

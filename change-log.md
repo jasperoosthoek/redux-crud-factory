@@ -101,6 +101,10 @@
 ##### Version 0.3.2
 - Fix `mapToProps` not working correctly when returning parent state
 
+##### Version 0.3.3
+- Fix not resetting `create` loading state in `set` reducer
+
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook
