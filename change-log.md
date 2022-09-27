@@ -104,6 +104,9 @@
 ##### Version 0.3.3
 - Fix not resetting `create` loading state in `set` reducer
 
+##### Version 0.3.4
+- Fix `unSelect` reducer throwing error when no argument is supplied
+
 
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function

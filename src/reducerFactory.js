@@ -246,7 +246,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
             : {},
         };
       case actionTypes.actions.unSelect:
-        if (payloadIsUndefined()) return prevState;
+        // if (payloadIsUndefined()) return prevState;
         if (typeof action.payload === 'object' && payloadIsUndefined(byKey)) return prevState;
         
         if (actions.select === 'multiple') {
