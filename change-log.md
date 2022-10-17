@@ -107,6 +107,8 @@
 ##### Version 0.3.4
 - Fix `unSelect` reducer throwing error when no argument is supplied
 
+##### Version 0.3.5
+- Add initial state of `includeActions` to parent object
 
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function

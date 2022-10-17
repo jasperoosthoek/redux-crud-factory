@@ -7,9 +7,20 @@ const getAsyncInitialState = action => ({
   },
 })
 
-const initialStateRoot = ({ state }) => ({
+const includeActionsInitialState = includeActions => (
+  Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
+    ...obj,
+    ...isAsync ? getAsyncInitialState(action) : {},
+    ...initialState,
+  }), {})
+);
+
+const initialStateRoot = ({ state, includeActions }) => ({
   list: null,
-  actions: getAsyncInitialState('getAll'),
+  actions: {
+    ...getAsyncInitialState('getAll'),
+    ...includeActionsInitialState(includeActions),
+  },
   state,
 });
 
@@ -27,11 +38,7 @@ export const getInitialState = ({
     ...actions.create ? getAsyncInitialState('create') : {},
     ...actions.delete ? getAsyncInitialState('delete') : {},
     ...actions.update ? getAsyncInitialState('update') : {},
-    ...Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
-      ...obj,
-      ...isAsync ? getAsyncInitialState(action) : {},
-      ...initialState,
-    }), {}),
+    ...includeActionsInitialState(includeActions),
   },
   ...actions.select === 'single'
     ? { [selectedId]: null }
