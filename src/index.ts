@@ -7,6 +7,8 @@ import hooksFactory from './hooksFactory';
 import mappersFactory from './mappersFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
 
+type Dispatch = ThunkDispatch<any, undefined, any>;
+
 export type OnError = (error: any) => void;
 
 export type Route = string | ((instance: any) => string);
@@ -34,7 +36,25 @@ export type Config = {
   actions: Actions;
 };
 
-const validateConfig = (config, defaultConfig) => {
+export type DefaultConfig = { 
+  axios: typeof Axios;
+  onError: OnError;
+  actions: Actions;
+  id?: string;
+  byKey?: string;
+  parentId?: string;
+}
+
+export interface ReduxCrudFactoryProps extends DefaultConfig {
+  config: {
+    [objectName: string]: Config;
+  };
+}
+
+export type ActionDispenser = (dispatch: Dispatch) => { 
+  [func: string]: (...args: any[]) => void;
+};
+const validateConfig = (config: any, defaultConfig: any) => {
   const {
     // The id to use when perform crud actions
     id = defaultConfig.id || 'id',
@@ -184,7 +204,20 @@ const validateConfig = (config, defaultConfig) => {
   return newConfig;
 }
 
-const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers, getActionDispatchersStripped }) => {
+type GetFactoryProps = {
+  objectName: string;
+  config: Config;
+  defaultConfig: DefaultConfig;
+  getAllActionDispatchers: (dispatch: Dispatch) => any;
+  getActionDispatchersStripped: (objectName: string) => any;
+}
+const getFactory = ({
+  objectName,
+  config: cfg,
+  defaultConfig,
+  getAllActionDispatchers,
+  getActionDispatchersStripped,
+}: GetFactoryProps) => {
   const config = validateConfig(cfg, defaultConfig);
   let factory = {
     ...actionsFactory({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }),
@@ -201,22 +234,7 @@ const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispat
   }
 }
 
-export type FullConfig = {
-  [objectName: string]: Config;
-}
-export type ReduxCrudFactoryProps = {
-  config: FullConfig;
-  axios: typeof Axios;
-  onError: OnError;
-  actions: Actions;
-  id?: string;
-  byKey?: string;
-  parentId?: string;
-}
 
-export type ActionDispenser = (dispatch: ThunkDispatch<any, undefined, any>) => { 
-  [func: string]: (...args: any[]) => void;
-};
 export default ({
   config: fullConfig,
   axios,
@@ -230,15 +248,15 @@ export default ({
   const allActionDispatchers = [] as ActionDispenser[];
   // Function to obtain actionDispatchers after they have all been created to avoid a chicken and egg situation because
   // the first factory actions requires the actions of all factories before those actions have been created.
-  const getAllActionDispatchers = dispatch =>
+  const getAllActionDispatchers = (dispatch: Dispatch) =>
     allActionDispatchers.reduce(
       (o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
   // Same situation as getAllActionDispatchers: First generate actionDispatchersStripped for each objectName and supply a
   // function to fetch them
-  const allActionDispatchersStripped = {};
-    const getActionDispatchersStripped = objectName => allActionDispatchersStripped[objectName];
+  const allActionDispatchersStripped = {} as {[objectName: string]: any};
+  const getActionDispatchersStripped = (objectName: string) => allActionDispatchersStripped[objectName];
   
-  const fullFactory = {};
+  const fullFactory = {} as {[property: string]: any};
   Object.entries(fullConfig)
     .map(([objectName, config]) => {
       const { actionDispatchers, actionDispatchersStripped, ...factory } = getFactory({
@@ -251,11 +269,11 @@ export default ({
           id,
           byKey,
           parentId,
-        },
+        } as DefaultConfig,
         getAllActionDispatchers,
         getActionDispatchersStripped,
       });
-      Object.entries(factory).map(([property, value]) => {
+      Object.entries(factory).map(([property, value]: [string, any]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
           [objectName]: value,
