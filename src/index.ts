@@ -1,9 +1,38 @@
+import Axios, { Method, AxiosRequestConfig } from 'axios';
+import { ThunkDispatch } from 'redux-thunk';
+
 import actionsFactory, { getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import hooksFactory from './hooksFactory';
 import mappersFactory from './mappersFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
 
+export type OnError = (error: any) => void;
+
+export type Route = string | ((instance: any) => string);
+
+export type IncludeAction = {
+  isAsync?: boolean;
+  route: Route;
+  method: Method;
+  prepare?: (instance: any) => any;
+  onResponse?: (instance: any) => any;
+  parent?: string;
+  onError?: OnError;
+  axiosConfig?: AxiosRequestConfig;
+}
+export type Actions = {
+  get?: boolean;
+  getList?: boolean;
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+  select?: boolean;
+  getAll?: boolean;
+}
+export type Config = {
+  actions: Actions;
+};
 
 const validateConfig = (config, defaultConfig) => {
   const {
@@ -49,7 +78,7 @@ const validateConfig = (config, defaultConfig) => {
   
   const detailRoute = getDetailRoute(route, id);
   
-  const newConfig = {
+  let newConfig = {
     id,
     byKey: byKey ? byKey : id,
     parseIdToInt,
@@ -136,7 +165,7 @@ const validateConfig = (config, defaultConfig) => {
               select: 'single',
             },
     },
-    includeActions: Object.entries(includeActions)
+    includeActions: Object.entries(includeActions as { [name: string]: IncludeAction})
       .reduce(
         (o, [key, { isAsync=true, method='get', ...obj}]) => (
           { ...o, [key]: { ...obj, isAsync, method }}
@@ -144,6 +173,8 @@ const validateConfig = (config, defaultConfig) => {
         {}
       ),
     route,
+    selectedId: undefined as string | undefined,
+    selectedIds: undefined as string | undefined,
   };
   if (newConfig.actions.select === 'single') {
     newConfig.selectedId = `selected${toUpperCamelCase(id)}`
@@ -170,6 +201,22 @@ const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispat
   }
 }
 
+export type FullConfig = {
+  [objectName: string]: Config;
+}
+export type ReduxCrudFactoryProps = {
+  config: FullConfig;
+  axios: typeof Axios;
+  onError: OnError;
+  actions: Actions;
+  id?: string;
+  byKey?: string;
+  parentId?: string;
+}
+
+export type ActionDispenser = (dispatch: ThunkDispatch<any, undefined, any>) => { 
+  [func: string]: (...args: any[]) => void;
+};
 export default ({
   config: fullConfig,
   axios,
@@ -178,13 +225,14 @@ export default ({
   id,
   byKey,
   parentId,
-}) => {
+}: ReduxCrudFactoryProps) => {
   // Save all actionDispatchers in this array
-  const allActionDispatchers = [];
+  const allActionDispatchers = [] as ActionDispenser[];
   // Function to obtain actionDispatchers after they have all been created to avoid a chicken and egg situation because
   // the first factory actions requires the actions of all factories before those actions have been created.
   const getAllActionDispatchers = dispatch =>
-    allActionDispatchers.reduce((o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
+    allActionDispatchers.reduce(
+      (o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
   // Same situation as getAllActionDispatchers: First generate actionDispatchersStripped for each objectName and supply a
   // function to fetch them
   const allActionDispatchersStripped = {};
