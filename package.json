@@ -8,25 +8,30 @@
     "files": [
         "src/",
         "lib-cjs/",
-        "lib-esm/"
+        "lib-esm/",
+        "typings/"
     ],
+    "typings": "./typings/index.d.ts",
     "devDependencies": {
         "@babel/cli": "^7.14.3",
         "@babel/core": "^7.18.6",
         "@babel/preset-env": "^7.18.6",
+        "@babel/preset-typescript": "^7.21.0",
         "@babel/register": "^7.13.16",
         "axios": "^0.21.0",
         "babel-jest": "^28.1.3",
         "jest": "^28.1.3",
-        "redux": "^4.1.0"
+        "redux": "^4.1.0",
+        "typescript": "^4.9.5"
     },
-    "main": "./lib-cjs/index.js",
-    "module": "./lib-esm/index.js",
+    "main": "./lib-cjs/index.ts",
+    "module": "./lib-esm/index.ts",
     "scripts": {
-        "_build": "babel src --extensions '.js' --source-maps=true",
+        "_build": "babel src --extensions '.js,.ts' --source-maps=true",
         "build:cjs": "NODE_ENV=production BABEL_ENV=cjs npm run _build -- --out-dir lib-cjs --delete-dir-on-start",
         "build:esm": "NODE_ENV=production BABEL_ENV=esm npm run _build -- --out-dir lib-esm --delete-dir-on-start",
-        "prepublishOnly": "npm install && npm run build:esm && npm run build:cjs",
+        "build:types": "tsc --project ./tsconfig.decl.json",
+        "prepublishOnly": "npm run build:esm && npm run build:cjs && npm run build:types",
         "test": "jest"
     },
     "peerDependencies": {

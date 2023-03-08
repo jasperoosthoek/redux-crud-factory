@@ -254,17 +254,21 @@ const formatActionTypes = (objectName, config) => {
 
 // Convert a list route, e.g '/api/foo' into a detail route '/api/foo/42'
 // Note that trailing slashes are handled automatically: '/api/foo/' becomes '/api/foo/42/'
-export const getDetailRoute = (route, id) => data =>
-  // To do: assertions for data, route and id
-  `${
-    route
-  }${
-    route.endsWith('/') ? '' : '/'
-  }${
-    typeof data === 'object' ? data[id] : data
-  }${
-    route.endsWith('/') ? '/' : ''
-  }`;
+export const getDetailRoute = (route, id) => (
+  typeof route === 'function'
+    ? route
+    : data =>
+      // To do: assertions for data, route and id
+      `${
+        route
+      }${
+        route.endsWith('/') ? '' : '/'
+      }${
+        typeof data === 'object' ? data[id] : data
+      }${
+        route.endsWith('/') ? '/' : ''
+      }`
+);
 
 export default ({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const {
@@ -588,6 +592,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
             const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });
             dispatch({
               type: actionTypes.isLoading[action],
+              payload: true,
               asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
               ...parentObj,
             });
