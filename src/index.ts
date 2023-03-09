@@ -119,6 +119,42 @@ export interface ReduxCrudFactoryProps extends DefaultConfig {
 export type ActionDispenser = (dispatch: Dispatch) => { 
   [func: string]: (...args: any[]) => void;
 };
+
+
+type ValidatedConfigBase = {
+  id: string;
+  byKey: string | null;
+  parseIdToInt: boolean;
+  state: State;
+  axios: typeof Axios;
+  onError: OnError;
+  actionTypeStyle: null
+  actions: (Partial<{
+    get: GetConfig;
+    getList: GetListConfig;
+    getAll: GetAllConfig;
+    create: CreateConfig;
+    update: UpdateConfig;
+    delete: DeleteConfig;
+  }> & { select: false | 'single' | 'multiple' })
+  includeActions?: IncludeActions;
+  route?: string;
+  selectedId?: string,
+  selectedIds?: string,
+}
+
+export interface ValidatedConfig extends ValidatedConfigBase {
+  parent: false;
+}
+
+export interface ValidatedParentConfig extends Omit<ValidatedConfigBase, 'actions'> {
+  parent: string;
+  parentId: string;
+  recursive: boolean;
+  parseParentToInt: boolean;
+  actions: Omit<ValidatedConfigBase['actions'], 'getAll'>
+}
+
 const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
   const {
     // The id to use when perform crud actions
@@ -163,7 +199,7 @@ const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
   
   const detailRoute = getDetailRoute(route, id);
   
-  let newConfig = {
+  const newConfig = {
     id,
     byKey: byKey ? byKey : id,
     parseIdToInt,
@@ -258,14 +294,13 @@ const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
         {}
       ),
     route,
-    selectedId: undefined as string | undefined,
-    selectedIds: undefined as string | undefined,
-  };
+  } as ValidatedConfig | ValidatedParentConfig;
   if (newConfig.actions.select === 'single') {
     newConfig.selectedId = `selected${toUpperCamelCase(id)}`
   } else if (newConfig.actions.select === 'multiple') {
     newConfig.selectedIds = `selected${singleToPlural(toUpperCamelCase(id))}`
   }
+
   return newConfig;
 }
 
