@@ -11,11 +11,51 @@ type Dispatch = ThunkDispatch<any, undefined, any>;
 
 export type OnError = (error: any) => void;
 
-export type Route = string | ((instance: any) => string);
+export type DetailRoute = string | ((instance: any) => string);
+export type Route = string | (() => string);
+
+export type Prepare = () => any;
+export type DetailPrepare = (instance: any) => any;
+export type Callback = (data: any) => void;
+
+type AsyncFunctions = {
+  callback: Callback,
+  onError: OnError,
+}
+export interface GetListConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare,
+  route: Route;
+}
+export interface GetAllConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare | null,
+  route: Route | null;
+}
+export interface CreateConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare | null,
+  route: Route | null;
+}
+export interface GetConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
+export interface UpdateConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
+export interface DeleteConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
 
 export type IncludeAction = {
   isAsync?: boolean;
-  route: Route;
+  route: Route | DetailRoute;
   method: Method;
   prepare?: (instance: any) => any;
   onResponse?: (instance: any) => any;
@@ -23,17 +63,40 @@ export type IncludeAction = {
   onError?: OnError;
   axiosConfig?: AxiosRequestConfig;
 }
-export type Actions = {
-  get?: boolean;
-  getList?: boolean;
-  create?: boolean;
-  update?: boolean;
-  delete?: boolean;
-  select?: boolean;
-  getAll?: boolean;
+
+export type IncludeActions = {
+  [action: string]: IncludeAction;
 }
+
+export type Actions = {
+  get?: boolean | Partial<GetConfig>;
+  getList?: boolean | Partial<GetListConfig>;
+  getAll?: boolean | Partial<GetAllConfig>;
+  create?: boolean | Partial<CreateConfig>;
+  update?: boolean | Partial<UpdateConfig>;
+  delete?: boolean | Partial<DeleteConfig>;
+  select?: false | 'single' | 'multiple';
+}
+
+export type State = {
+  [key: string]: any;
+}
+
 export type Config = {
   actions: Actions;
+  id?: string;
+  parseIdToInt?: boolean;
+  byKey?: string;
+  state?: State;
+  parent?: string;
+  parentId?: string;
+  parseParentToInt?: boolean;
+  recursive?: boolean;
+  route?: Route;
+  includeActions?: IncludeActions;
+  axios?: typeof Axios;
+  onError?: OnError;
+  actionTypeStyle?: null;
 };
 
 export type DefaultConfig = { 
@@ -43,7 +106,9 @@ export type DefaultConfig = {
   id?: string;
   byKey?: string;
   parentId?: string;
-}
+  parseIdToInt?: boolean;
+  parseParentToInt?: boolean;
+};
 
 export interface ReduxCrudFactoryProps extends DefaultConfig {
   config: {
@@ -54,7 +119,7 @@ export interface ReduxCrudFactoryProps extends DefaultConfig {
 export type ActionDispenser = (dispatch: Dispatch) => { 
   [func: string]: (...args: any[]) => void;
 };
-const validateConfig = (config: any, defaultConfig: any) => {
+const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
   const {
     // The id to use when perform crud actions
     id = defaultConfig.id || 'id',
@@ -123,7 +188,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route,
             ...typeof actions.getList === 'object' ? actions.getList : {},
-          }}
+          } as GetListConfig}
         : {},
       ...parent && actions.getAll
         ? { getAll: {
@@ -133,7 +198,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route,
             ...typeof actions.getAll === 'object' ? actions.getAll : {},
-          }}
+          } as GetAllConfig}
         : {},
       ...actions.create
         ? { create: {
@@ -143,7 +208,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route,
             ...typeof actions.create === 'object' ? actions.create : {},
-          }}
+          } as CreateConfig}
         : {},
       ...actions.get
         ? { get: {
@@ -153,7 +218,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.get === 'object' ? actions.get : {},
-          }}
+          } as GetConfig}
         : {},
       ...actions.update
         ? { update: {
@@ -163,7 +228,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.update === 'object' ? actions.update : {},
-          }}
+          } as UpdateConfig}
         : {},
       ...actions.delete
         ? { delete: {
@@ -173,7 +238,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.delete === 'object' ? actions.delete : {},
-          }}
+          } as DeleteConfig}
         : {},
       ...!actions.select
         ? { select: false }
@@ -185,7 +250,7 @@ const validateConfig = (config: any, defaultConfig: any) => {
               select: 'single',
             },
     },
-    includeActions: Object.entries(includeActions as { [name: string]: IncludeAction})
+    includeActions: Object.entries(includeActions as IncludeActions)
       .reduce(
         (o, [key, { isAsync=true, method='get', ...obj}]) => (
           { ...o, [key]: { ...obj, isAsync, method }}
@@ -234,15 +299,9 @@ const getFactory = ({
   }
 }
 
-
 export default ({
   config: fullConfig,
-  axios,
-  onError,
-  actions,
-  id,
-  byKey,
-  parentId,
+  ...defaultConfig
 }: ReduxCrudFactoryProps) => {
   // Save all actionDispatchers in this array
   const allActionDispatchers = [] as ActionDispenser[];
@@ -262,14 +321,7 @@ export default ({
       const { actionDispatchers, actionDispatchersStripped, ...factory } = getFactory({
         objectName,
         config,
-        defaultConfig: { 
-          axios,
-          onError,
-          actions,
-          id,
-          byKey,
-          parentId,
-        } as DefaultConfig,
+        defaultConfig,
         getAllActionDispatchers,
         getActionDispatchersStripped,
       });
