@@ -19,10 +19,10 @@ export const toUpperCamelCase = (str: string) => {
   return `${camelCaseId.charAt(0).toUpperCase()}${camelCaseId.slice(1)}`;
 }
 
-export const pluralToSingle = (str: string) => {
+export const pluralToSingle = <T extends string>(str: T) => {
   if (str.slice(-1).toLowerCase() !== 's') {
     // This string is not plural: keep it unaltered
-    return str;
+    return str as T;
   } else if (str.slice(-3) === 'ies') {
     // Handle special case of categories
     return `${str.slice(0, -3)}y`;
@@ -35,19 +35,20 @@ export const pluralToSingle = (str: string) => {
   } 
 }
 
-export const singleToPlural = (str: string) => {
+type SingleToPlural<S extends string> = S extends `${infer $S}s` ? `${$S}s` : 
+  S extends `${infer $S}y` ? `${$S}ies` : 
+  S extends string ? `${S}s` : S;
+
+export const singleToPlural = <T extends string>(str: T) => {
   if (str.slice(-1).toLowerCase() === 's') {
     // This string is already plural: keep it unaltered
-    return str;
+    return str as SingleToPlural<T>;
   } else if (str.slice(-1) === 'y') {
     // Handle special case of categories
-    return `${str.slice(0, -1)}ies`;
-  } else if (str.slice(-1) === 'Y') {
-    // Same but in upper case
-    return `${str.slice(0, -1)}IES`;
+    return `${str.slice(0, -1)}ies` as SingleToPlural<T>;
   } else {
     // Standard plural
-    return `${str}s`;
+    return `${str}s` as  SingleToPlural<T>;
   } 
 }
 
