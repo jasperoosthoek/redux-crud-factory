@@ -62,6 +62,7 @@ export type IncludeAction = {
   parent?: string;
   onError?: OnError;
   axiosConfig?: AxiosRequestConfig;
+  initialState: any; // Check if this is necessary
 }
 
 export type IncludeActions = {
@@ -96,7 +97,6 @@ export type Config = {
   includeActions?: IncludeActions;
   axios?: typeof Axios;
   onError?: OnError;
-  actionTypeStyle?: null;
 };
 
 export type DefaultConfig = { 
@@ -128,7 +128,6 @@ type ValidatedConfigBase = {
   state: State;
   axios: typeof Axios;
   onError: OnError;
-  actionTypeStyle: null
   actions: (Partial<{
     get: GetConfig;
     getList: GetListConfig;
@@ -171,7 +170,6 @@ const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
     includeActions = {},
     axios = defaultConfig.axios || null,
     onError = defaultConfig.onError || null,
-    actionTypeStyle = null,
   } = config;
 
   // Merge default actions with actions for this factory
@@ -214,7 +212,6 @@ const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
     state,
     axios,
     onError,
-    actionTypeStyle,
     actions: {
       ...actions.getList
         ? { getList: {

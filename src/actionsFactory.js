@@ -93,7 +93,6 @@ export const formatActionAndFunctionNames = objectName => {
 
 const formatActionTypes = (objectName, config) => {
   const {
-    actionTypeStyle,
     select,
     parent,
     actions,
@@ -206,7 +205,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     onError: globalOnError,
     parent,
     parentId,
-    actionTypeStyle,
     id,
     byKey,
     actions,
