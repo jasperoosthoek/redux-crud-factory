@@ -78,7 +78,8 @@ export type EntriesType = [PropertyKey, unknown][] | ReadonlyArray<readonly [Pro
 
 // Existing Utils
 type DeepWritable<OBJ_T> = { -readonly [P in keyof OBJ_T]: DeepWritable<OBJ_T[P]> };
-type UnionToIntersection<UNION_T> // From https://stackoverflow.com/a/50375286
+// From https://stackoverflow.com/a/50375286
+type UnionToIntersection<UNION_T>
     = (UNION_T extends any ? (k: UNION_T) => void : never) extends ((k: infer I) => void) ? I : never;
 
 // New Utils
@@ -91,8 +92,12 @@ export const objectFromEntries = <ARR_T extends EntriesType>(arr: ARR_T): Entrie
     return Object.fromEntries(arr) as EntriesToObject<ARR_T>;
 }
 
-const arrayMap = <T extends any>(array: T[], byKey: PropertyKey ) =>
-  array.map((obj: T) => [obj[byKey], obj]) as [any, T][];
+const arrayMap = <
+  T extends any,
+  K extends keyof T
+>(array: T[], byKey: K ) => (
+  array.map((obj: T) => [obj[byKey], obj]) as [any, T][]
+);
 
 export const arrayToObject = <
   T extends any,
