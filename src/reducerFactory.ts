@@ -26,7 +26,7 @@ const initialStateRoot = ({ state, includeActions }: ValidatedConfig | Validated
   list: null as any,
   actions: {
     ...getAsyncInitialState('getAll'),
-    ...includeActionsInitialState(includeActions),
+    ...includeActions ? includeActionsInitialState(includeActions) : {},
   },
   state,
 });
@@ -45,12 +45,12 @@ export const getInitialState = ({
     ...actions.create ? getAsyncInitialState('create') : {},
     ...actions.delete ? getAsyncInitialState('delete') : {},
     ...actions.update ? getAsyncInitialState('update') : {},
-    ...includeActionsInitialState(includeActions),
+    ...includeActions ? includeActionsInitialState(includeActions) : {},
   },
   ...actions.select === 'single'
-    ? { [selectedId]: null }
+    ? { [selectedId as string]: null }
     : actions.select === 'multiple'
-    ? { [selectedIds]: new Set() }
+    ? { [selectedIds as string]: new Set() }
     : {},
   state: includeState,
 });
@@ -113,7 +113,7 @@ const getSubReducer = (
   return (state: any, action: any) => {
     const prevState = state || getInitialState(config);
     const prevActions = prevState.actions;
-    const selectedIdsNew = selectedIds && prevState[selectedIds]
+    const selectedIdsNew = selectedIds && prevState[selectedIds as string]
 
     let actionName;
 
@@ -155,11 +155,11 @@ const getSubReducer = (
       }
     }
 
-    const payloadIsUndefined = (key?: string) => {
+    const payloadIsUndefined = (key?: string | null | undefined) => {
       if (typeof action.payload === 'undefined') {
         console.error(`Error handling action ${action.type}: The value of action.payload should not be undefined.`)
         return true;
-      } else if (key && typeof action.payload[byKey] === 'undefined') {
+      } else if (key && typeof action.payload[byKey as string] === 'undefined') {
         console.error(`Error handling action ${action.type}: The value of action.payload.${key} should not be undefined.`)
         return true;
       }
@@ -185,13 +185,13 @@ const getSubReducer = (
             ...prevActions,
             ...getAsyncInitialState('getList'),
           },
-          ...actions.select === 'single' && prevState[selectedId] && !list[prevState[selectedId]]
+          ...actions.select === 'single' && prevState[selectedId as string] && !list[prevState[selectedId as string]]
             // Reset selected value when it is selected in the previous state but it no longer exists in the
             // new state. Do not touch selected value when it still exists in the new state.
-            ? { [selectedId]: null }
+            ? { [selectedId as string]: null }
             : actions.select === 'multiple'
             // Do something similar for multiple selections: Remove selected ids that no longer exist in the new list
-            ? { [selectedIds]: selectedIdsNew }
+            ? { [selectedIds as string]: selectedIdsNew }
             : {},
         };
       case actionTypes.actions.set:
@@ -199,7 +199,7 @@ const getSubReducer = (
 
         return {
           ...prevState,
-          list: { ...prevState.list || {}, [action.payload[byKey]]: action.payload },
+          list: { ...prevState.list || {}, [action.payload[byKey as string]]: action.payload },
           actions: {
             ...prevActions,
             // To do: "set" is ambiguous, replace by getSuccess & createSuccess etc.
@@ -213,14 +213,14 @@ const getSubReducer = (
         return {
           ...prevState,
           list: {
-            ...action.payload[id] === action.id && action.payload[byKey] === action.key
+            ...action.payload[id] === action.id && action.payload[byKey as string] === action.key
               ? prevState.list
               // When id !== byKey it is possible to change the key. Therefore we need the id to be able to remove the
               // original object
               : Object.fromEntries(Object.entries(prevState.list).filter(
-                ([key, obj]: [string, any]) => obj[id] !== action.id && obj[byKey] !== action.key)
+                ([key, obj]: [string, any]) => obj[id] !== action.id && obj[byKey as string] !== action.key)
               ),
-            [action.payload[byKey]]: { ...prevState.list[action.payload[byKey]], ...action.payload },
+            [action.payload[byKey as string]]: { ...prevState.list[action.payload[byKey as string]], ...action.payload },
           },
           actions: {
             ...prevActions,
@@ -232,10 +232,10 @@ const getSubReducer = (
         
         const newList = { ...(prevState || {}).list };
         if (actions.select === 'multiple') {
-          selectedIdsNew.delete(action.payload[byKey]);
+          selectedIdsNew.delete(action.payload[byKey as string]);
         }
-        if (newList[action.payload[byKey]]) {
-          delete newList[action.payload[byKey]];
+        if (newList[action.payload[byKey as string]]) {
+          delete newList[action.payload[byKey as string]];
         }
         return {
           ...prevState,
@@ -246,11 +246,11 @@ const getSubReducer = (
           },
           ...actions.select === 'single'
             ? {
-                [selectedId]: prevState[selectedId] === action.payload[byKey] ? null : prevState[selectedId],
+                [selectedId as string]: prevState[selectedId as string] === action.payload[byKey as string] ? null : prevState[selectedId as string],
               }
             : actions.select === 'multiple'
             ? {
-                [selectedIds]: selectedIdsNew,
+                [selectedIds as string]: selectedIdsNew,
               }
             : {},
         };
@@ -261,9 +261,9 @@ const getSubReducer = (
         return {
           ...prevState,
           ...actions.select === 'single'
-            ? { [selectedId]: typeof action.payload === 'object' ? action.payload[byKey] : action.payload}
+            ? { [selectedId as string]: typeof action.payload === 'object' ? action.payload[byKey as string] : action.payload}
             : actions.select === 'multiple'
-            ? { [selectedIds]: prevState[selectedIds].add(typeof action.payload === 'object' ? action.payload[byKey] : action.payload) }
+            ? { [selectedIds as string]: prevState[selectedIds as string].add(typeof action.payload === 'object' ? action.payload[byKey as string] : action.payload) }
             : {},
         };
       case actionTypes.actions.unSelect:
@@ -271,14 +271,14 @@ const getSubReducer = (
         if (typeof action.payload === 'object' && payloadIsUndefined(byKey)) return prevState;
         
         if (actions.select === 'multiple') {
-          selectedIdsNew.delete(typeof action.payload === 'object' ? action.payload[byKey] : action.payload)
+          selectedIdsNew.delete(typeof action.payload === 'object' ? action.payload[byKey as string] : action.payload)
         }
         return {
           ...prevState,
           ...actions.select === 'single'
-            ? { [selectedId]: null }
+            ? { [selectedId as string]: null }
             : actions.select === 'multiple'
-            ? { [selectedIds]: selectedIdsNew }
+            ? { [selectedIds as string]: selectedIdsNew }
             : {},
         };
       case actionTypes.actions.clearList:
@@ -342,9 +342,9 @@ export default (objectName: string, config: (ValidatedConfig | ValidatedParentCo
         action.payload.map((o: any) => {
           if (!obj[o[parent]]) {
             obj[o[parent]] = getInitialState(config);
-            obj[o[parent]].list = { [o[byKey]]: o };
+            obj[o[parent]].list = { [o[byKey as string]]: o };
           } else {
-            obj[o[parent]].list[o[byKey]] = o;
+            obj[o[parent]].list[o[byKey as string]] = o;
           }
         });
         if (recursive) {

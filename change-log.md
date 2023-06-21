@@ -112,7 +112,9 @@
 
 ##### Version 0.3.6
 - New Typescript config & Webpack build script
-- Convert part of codebase Typescript
+
+##### Version 0.3.7
+- Fix Typescript errors in `reducerFactory`
 
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
