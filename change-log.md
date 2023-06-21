@@ -112,6 +112,7 @@
 
 ##### Version 0.3.6
 - New Typescript config & Webpack build script
+- Convert part of codebase Typescript
 
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
