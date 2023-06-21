@@ -93,7 +93,6 @@ export const formatActionAndFunctionNames = objectName => {
 
 const formatActionTypes = (objectName, config) => {
   const {
-    actionTypeStyle,
     select,
     parent,
     actions,
@@ -102,77 +101,6 @@ const formatActionTypes = (objectName, config) => {
   } = config;
   const { actionSingle, actionPlural } = formatActionAndFunctionNames(objectName);
   
-  // if (typeof actionTypeStyle == 'function') {
-  //   return {
-  //     set: actionTypeStyle(SET),
-  //     clear: actionTypeStyle(CLEAR),
-  //     ...actions.get
-  //       ?
-  //         {
-  //           get: actionTypeStyle(GET),
-  //           getIsLoading: actionTypeStyle(GET_IS_LOADING),
-  //           getError: actionTypeStyle(GET_ERROR),
-  //         }
-  //       : {},
-  //     ...actions.create
-  //       ?
-  //         {
-  //           create: actionTypeStyle(CREATE),
-  //           createIsLoading: actionTypeStyle(CREATE_IS_LOADING),
-  //           createError: actionTypeStyle(CREATE_ERROR),
-  //         }
-  //       : {},
-  //     ...actions.update
-  //       ?
-  //         {
-  //           update: actionTypeStyle(UPDATE),
-  //           updateIsLoading: actionTypeStyle(UPDATE_IS_LOADING),
-  //           updateError: actionTypeStyle(UPDATE_ERROR),
-  //         }
-  //       : {},
-  //     ...actions.delete
-  //       ?
-  //         {
-  //           delete: `${DELETE}_${actionSingle}`,
-  //           deleteIsLoading: actionTypeStyle(DELETE_IS_LOADING),
-  //           deleteError: actionTypeStyle(DELETE_ERROR),
-  //         }
-  //       : {},
-  //     ...actions.getList
-  //       ?
-  //         {
-  //           getList: actionTypeStyle(GET_LIST),
-  //           setList: actionTypeStyle(SET_LIST),
-  //           clearList: actionTypeStyle(CLEAR_LIST),
-  //         }
-  //       : {},
-  //     ...actions.select === 'single'
-  //       ?
-  //         {
-  //           select: actionTypeStyle(SELECT),
-  //           unSelect: actionTypeStyle(UN_SELECT),
-  //         }
-  //       : {},
-  //     ...actions.select === 'multiple'
-  //       ?
-  //         {
-  //           selectAll: actionTypeStyle(SELECT_ALL),
-  //           unSelectAll: actionTypeStyle(UN_SELECT_ALL),
-  //         }
-  //       : {},
-  //     ...parent
-  //       ?
-  //         {
-  //           getAll: actionTypeStyle(GET_ALL),
-  //           getAllIsLoading: actionTypeStyle(GET_ALL_IS_LOADING),
-  //           getAllError: actionTypeStyle(GET_ALL_ERROR),
-  //           setAll: actionTypeStyle(SET_ALL),
-  //           clearAll: actionTypeStyle(CLEAR_ALL),
-  //         }
-  //       : {},
-  //   };
-  // }
-
   const actionTypesAsync = {
     isLoading: {},
     error: {},
@@ -254,17 +182,21 @@ const formatActionTypes = (objectName, config) => {
 
 // Convert a list route, e.g '/api/foo' into a detail route '/api/foo/42'
 // Note that trailing slashes are handled automatically: '/api/foo/' becomes '/api/foo/42/'
-export const getDetailRoute = (route, id) => data =>
-  // To do: assertions for data, route and id
-  `${
-    route
-  }${
-    route.endsWith('/') ? '' : '/'
-  }${
-    typeof data === 'object' ? data[id] : data
-  }${
-    route.endsWith('/') ? '/' : ''
-  }`;
+export const getDetailRoute = (route, id) => (
+  typeof route === 'function'
+    ? route
+    : data =>
+      // To do: assertions for data, route and id
+      `${
+        route
+      }${
+        route.endsWith('/') ? '' : '/'
+      }${
+        typeof data === 'object' ? data[id] : data
+      }${
+        route.endsWith('/') ? '/' : ''
+      }`
+);
 
 export default ({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }) => {
   const {
@@ -273,7 +205,6 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
     onError: globalOnError,
     parent,
     parentId,
-    actionTypeStyle,
     id,
     byKey,
     actions,
@@ -588,6 +519,7 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
             const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });
             dispatch({
               type: actionTypes.isLoading[action],
+              payload: true,
               asyncState: { data, params, args, method, route: mergedAxiosConfig.url },
               ...parentObj,
             });

@@ -110,6 +110,10 @@
 ##### Version 0.3.5
 - Add initial state of `includeActions` to parent object
 
+##### Version 0.3.6
+- New Typescript config & Webpack build script
+- Convert part of codebase Typescript
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook

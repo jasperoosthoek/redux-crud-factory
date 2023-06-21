@@ -1,11 +1,160 @@
+import Axios, { Method, AxiosRequestConfig } from 'axios';
+import { ThunkDispatch } from 'redux-thunk';
+
 import actionsFactory, { getDetailRoute } from './actionsFactory';
 import reducerFactory from './reducerFactory';
 import hooksFactory from './hooksFactory';
 import mappersFactory from './mappersFactory';
 import { toUpperCamelCase, singleToPlural } from './utils';
 
+type Dispatch = ThunkDispatch<any, undefined, any>;
 
-const validateConfig = (config, defaultConfig) => {
+export type OnError = (error: any) => void;
+
+export type DetailRoute = string | ((instance: any) => string);
+export type Route = string | (() => string);
+
+export type Prepare = () => any;
+export type DetailPrepare = (instance: any) => any;
+export type Callback = (data: any) => void;
+
+type AsyncFunctions = {
+  callback: Callback,
+  onError: OnError,
+}
+export interface GetListConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare,
+  route: Route;
+}
+export interface GetAllConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare | null,
+  route: Route | null;
+}
+export interface CreateConfig extends AsyncFunctions {
+  method: Method;
+  prepare: Prepare | null,
+  route: Route | null;
+}
+export interface GetConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
+export interface UpdateConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
+export interface DeleteConfig extends AsyncFunctions {
+  method: Method;
+  prepare: DetailPrepare | null,
+  route: DetailRoute | null;
+}
+
+export type IncludeAction = {
+  isAsync?: boolean;
+  route: Route | DetailRoute;
+  method: Method;
+  prepare?: (instance: any) => any;
+  onResponse?: (instance: any) => any;
+  parent?: string;
+  onError?: OnError;
+  axiosConfig?: AxiosRequestConfig;
+  initialState: any; // Check if this is necessary
+}
+
+export type IncludeActions = {
+  [action: string]: IncludeAction;
+}
+
+export type Actions = {
+  get?: boolean | Partial<GetConfig>;
+  getList?: boolean | Partial<GetListConfig>;
+  getAll?: boolean | Partial<GetAllConfig>;
+  create?: boolean | Partial<CreateConfig>;
+  update?: boolean | Partial<UpdateConfig>;
+  delete?: boolean | Partial<DeleteConfig>;
+  select?: false | 'single' | 'multiple';
+}
+
+export type State = {
+  [key: string]: any;
+}
+
+export type Config = {
+  actions: Actions;
+  id?: string;
+  parseIdToInt?: boolean;
+  byKey?: string;
+  state?: State;
+  parent?: string;
+  parentId?: string;
+  parseParentToInt?: boolean;
+  recursive?: boolean;
+  route?: Route;
+  includeActions?: IncludeActions;
+  axios?: typeof Axios;
+  onError?: OnError;
+};
+
+export type DefaultConfig = { 
+  axios: typeof Axios;
+  onError: OnError;
+  actions: Actions;
+  id?: string;
+  byKey?: string;
+  parentId?: string;
+  parseIdToInt?: boolean;
+  parseParentToInt?: boolean;
+};
+
+export interface ReduxCrudFactoryProps extends DefaultConfig {
+  config: {
+    [objectName: string]: Config;
+  };
+}
+
+export type ActionDispenser = (dispatch: Dispatch) => { 
+  [func: string]: (...args: any[]) => void;
+};
+
+
+type ValidatedConfigBase = {
+  id: string;
+  byKey: string | null;
+  parseIdToInt: boolean;
+  state: State;
+  axios: typeof Axios;
+  onError: OnError;
+  actions: (Partial<{
+    get: GetConfig;
+    getList: GetListConfig;
+    getAll: GetAllConfig;
+    create: CreateConfig;
+    update: UpdateConfig;
+    delete: DeleteConfig;
+  }> & { select: false | 'single' | 'multiple' })
+  includeActions?: IncludeActions;
+  route?: string;
+  selectedId?: string,
+  selectedIds?: string,
+}
+
+export interface ValidatedConfig extends ValidatedConfigBase {
+  parent: false;
+}
+
+export interface ValidatedParentConfig extends Omit<ValidatedConfigBase, 'actions'> {
+  parent: string;
+  parentId: string;
+  recursive: boolean;
+  parseParentToInt: boolean;
+  actions: Omit<ValidatedConfigBase['actions'], 'getAll'>
+}
+
+const validateConfig = (config: Config, defaultConfig: DefaultConfig) => {
   const {
     // The id to use when perform crud actions
     id = defaultConfig.id || 'id',
@@ -21,7 +170,6 @@ const validateConfig = (config, defaultConfig) => {
     includeActions = {},
     axios = defaultConfig.axios || null,
     onError = defaultConfig.onError || null,
-    actionTypeStyle = null,
   } = config;
 
   // Merge default actions with actions for this factory
@@ -64,7 +212,6 @@ const validateConfig = (config, defaultConfig) => {
     state,
     axios,
     onError,
-    actionTypeStyle,
     actions: {
       ...actions.getList
         ? { getList: {
@@ -74,7 +221,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route,
             ...typeof actions.getList === 'object' ? actions.getList : {},
-          }}
+          } as GetListConfig}
         : {},
       ...parent && actions.getAll
         ? { getAll: {
@@ -84,7 +231,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route,
             ...typeof actions.getAll === 'object' ? actions.getAll : {},
-          }}
+          } as GetAllConfig}
         : {},
       ...actions.create
         ? { create: {
@@ -94,7 +241,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route,
             ...typeof actions.create === 'object' ? actions.create : {},
-          }}
+          } as CreateConfig}
         : {},
       ...actions.get
         ? { get: {
@@ -104,7 +251,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.get === 'object' ? actions.get : {},
-          }}
+          } as GetConfig}
         : {},
       ...actions.update
         ? { update: {
@@ -114,7 +261,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.update === 'object' ? actions.update : {},
-          }}
+          } as UpdateConfig}
         : {},
       ...actions.delete
         ? { delete: {
@@ -124,7 +271,7 @@ const validateConfig = (config, defaultConfig) => {
             onError: null,
             route: detailRoute,
             ...typeof actions.delete === 'object' ? actions.delete : {},
-          }}
+          } as DeleteConfig}
         : {},
       ...!actions.select
         ? { select: false }
@@ -136,7 +283,7 @@ const validateConfig = (config, defaultConfig) => {
               select: 'single',
             },
     },
-    includeActions: Object.entries(includeActions)
+    includeActions: Object.entries(includeActions as IncludeActions)
       .reduce(
         (o, [key, { isAsync=true, method='get', ...obj}]) => (
           { ...o, [key]: { ...obj, isAsync, method }}
@@ -144,16 +291,30 @@ const validateConfig = (config, defaultConfig) => {
         {}
       ),
     route,
-  };
+  } as ValidatedConfig | ValidatedParentConfig;
   if (newConfig.actions.select === 'single') {
     newConfig.selectedId = `selected${toUpperCamelCase(id)}`
   } else if (newConfig.actions.select === 'multiple') {
     newConfig.selectedIds = `selected${singleToPlural(toUpperCamelCase(id))}`
   }
+
   return newConfig;
 }
 
-const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispatchers, getActionDispatchersStripped }) => {
+type GetFactoryProps = {
+  objectName: string;
+  config: Config;
+  defaultConfig: DefaultConfig;
+  getAllActionDispatchers: (dispatch: Dispatch) => any;
+  getActionDispatchersStripped: (objectName: string) => any;
+}
+const getFactory = ({
+  objectName,
+  config: cfg,
+  defaultConfig,
+  getAllActionDispatchers,
+  getActionDispatchersStripped,
+}: GetFactoryProps) => {
   const config = validateConfig(cfg, defaultConfig);
   let factory = {
     ...actionsFactory({ objectName, config, getAllActionDispatchers, getActionDispatchersStripped }),
@@ -172,42 +333,31 @@ const getFactory = ({ objectName, config: cfg, defaultConfig, getAllActionDispat
 
 export default ({
   config: fullConfig,
-  axios,
-  onError,
-  actions,
-  id,
-  byKey,
-  parentId,
-}) => {
+  ...defaultConfig
+}: ReduxCrudFactoryProps) => {
   // Save all actionDispatchers in this array
-  const allActionDispatchers = [];
+  const allActionDispatchers = [] as ActionDispenser[];
   // Function to obtain actionDispatchers after they have all been created to avoid a chicken and egg situation because
   // the first factory actions requires the actions of all factories before those actions have been created.
-  const getAllActionDispatchers = dispatch =>
-    allActionDispatchers.reduce((o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
+  const getAllActionDispatchers = (dispatch: Dispatch) =>
+    allActionDispatchers.reduce(
+      (o, actionDispatcher) => ({ ...o, ...actionDispatcher(dispatch) }), {});
   // Same situation as getAllActionDispatchers: First generate actionDispatchersStripped for each objectName and supply a
   // function to fetch them
-  const allActionDispatchersStripped = {};
-    const getActionDispatchersStripped = objectName => allActionDispatchersStripped[objectName];
+  const allActionDispatchersStripped = {} as {[objectName: string]: any};
+  const getActionDispatchersStripped = (objectName: string) => allActionDispatchersStripped[objectName];
   
-  const fullFactory = {};
+  const fullFactory = {} as {[property: string]: any};
   Object.entries(fullConfig)
     .map(([objectName, config]) => {
       const { actionDispatchers, actionDispatchersStripped, ...factory } = getFactory({
         objectName,
         config,
-        defaultConfig: { 
-          axios,
-          onError,
-          actions,
-          id,
-          byKey,
-          parentId,
-        },
+        defaultConfig,
         getAllActionDispatchers,
         getActionDispatchersStripped,
       });
-      Object.entries(factory).map(([property, value]) => {
+      Object.entries(factory).map(([property, value]: [string, any]) => {
         fullFactory[property] = {
           ...fullFactory[property] ? fullFactory[property] : {},
           [objectName]: value,

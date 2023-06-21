@@ -1,13 +1,20 @@
 import { arrayToObject, titleCase } from './utils';
+import { IncludeActions, ValidatedConfig, ValidatedParentConfig } from './index';
 
-const getAsyncInitialState = action => ({
-  [action]: {
-    isLoading: false,
-    error: null,
-  },
+type AsyncState = {
+  isLoading: boolean;
+  error: any;
+}
+const asyncInitialState = {
+  isLoading: false,
+  error: null,
+} as AsyncState;
+
+const getAsyncInitialState = <T extends string>(action: T): { [action: string]: AsyncState} => ({
+  [action]: asyncInitialState,
 })
 
-const includeActionsInitialState = includeActions => (
+const includeActionsInitialState = (includeActions: IncludeActions) => (
   Object.entries(includeActions).reduce((obj, [action, { isAsync, initialState = {} }]) => ({
     ...obj,
     ...isAsync ? getAsyncInitialState(action) : {},
@@ -15,8 +22,8 @@ const includeActionsInitialState = includeActions => (
   }), {})
 );
 
-const initialStateRoot = ({ state, includeActions }) => ({
-  list: null,
+const initialStateRoot = ({ state, includeActions }: ValidatedConfig | ValidatedParentConfig) => ({
+  list: null as any,
   actions: {
     ...getAsyncInitialState('getAll'),
     ...includeActionsInitialState(includeActions),
@@ -30,8 +37,8 @@ export const getInitialState = ({
   actions,
   includeActions,
   state: includeState,
-}) => ({
-  list: null,
+}: ValidatedConfig | ValidatedParentConfig) => ({
+  list: null as any,
   actions: {
     ...getAsyncInitialState('getList'),
     ...actions.get ? getAsyncInitialState('get') : {},
@@ -50,7 +57,7 @@ export const getInitialState = ({
 
 // Single functions handle all isLoading, error & clearError actions in state.
 // This is DRY and can be easily extended
-const setIsLoading = (state, { payload, asyncState }, actionName) => {
+const setIsLoading = (state: any, { payload, asyncState }: { payload: any; asyncState: AsyncState}, actionName: string) => {
   const isLoading = payload === false ? false : true;
   return {
     ...state,
@@ -65,7 +72,7 @@ const setIsLoading = (state, { payload, asyncState }, actionName) => {
   }
 };
 
-const setError = (state, action, actionName) => ({
+const setError = (state: any, action: any, actionName: string) => ({
   ...state,
   actions: {
     ...state.actions,
@@ -77,7 +84,7 @@ const setError = (state, action, actionName) => ({
   },
 });
 
-const setClearError = (state, action, actionName) => ({
+const setClearError = (state: any, action: any, actionName: string) => ({
   ...state,
   actions: {
     ...state.actions,
@@ -88,7 +95,11 @@ const setClearError = (state, action, actionName) => ({
   },
 });
 
-const getSubReducer = (objectName, config, actionTypes) => {
+const getSubReducer = (
+  objectName: string,
+  config: ValidatedConfig | ValidatedParentConfig,
+  actionTypes: any
+) => {
   const {
     id,
     byKey,
@@ -99,14 +110,14 @@ const getSubReducer = (objectName, config, actionTypes) => {
     includeActions,
   } = config;
   
-  return (state, action) => {
+  return (state: any, action: any) => {
     const prevState = state || getInitialState(config);
     const prevActions = prevState.actions;
     const selectedIdsNew = selectedIds && prevState[selectedIds]
 
     let actionName;
 
-    const findByActionSubType = subType => (
+    const findByActionSubType = (subType: string) => (
       (
         actionTypes[subType] && Object.entries(actionTypes[subType])
           .find(([, actionType]) => action.type === actionType)
@@ -144,7 +155,7 @@ const getSubReducer = (objectName, config, actionTypes) => {
       }
     }
 
-    const payloadIsUndefined = key => {
+    const payloadIsUndefined = (key?: string) => {
       if (typeof action.payload === 'undefined') {
         console.error(`Error handling action ${action.type}: The value of action.payload should not be undefined.`)
         return true;
@@ -159,9 +170,10 @@ const getSubReducer = (objectName, config, actionTypes) => {
       case actionTypes.actions.setList:
         if (payloadIsUndefined()) return prevState;
         
-        let list = arrayToObject(action.payload, byKey);
+        // @ts-ignore
+        let list = arrayToObject(action.payload as any, byKey);
         if (actions.select === 'multiple' && selectedIdsNew.length !== 0) {
-          selectedIdsNew.forEach(id => {
+          selectedIdsNew.forEach((id: string | number) => {
             if (!list[id]) selectedIdsNew.delete(id);
           });
         }
@@ -205,7 +217,9 @@ const getSubReducer = (objectName, config, actionTypes) => {
               ? prevState.list
               // When id !== byKey it is possible to change the key. Therefore we need the id to be able to remove the
               // original object
-              : Object.fromEntries(Object.entries(prevState.list).filter(([key, obj]) => obj[id] !== action.id && obj[byKey] !== action.key)),
+              : Object.fromEntries(Object.entries(prevState.list).filter(
+                ([key, obj]: [string, any]) => obj[id] !== action.id && obj[byKey] !== action.key)
+              ),
             [action.payload[byKey]]: { ...prevState.list[action.payload[byKey]], ...action.payload },
           },
           actions: {
@@ -276,17 +290,18 @@ const getSubReducer = (objectName, config, actionTypes) => {
   }
 }
 
-export default (objectName, config = {}, { actionTypes }) => {
+export default (objectName: string, config: (ValidatedConfig | ValidatedParentConfig), { actionTypes }: any) => {
   const {
     id,
     byKey,
     parent,
+    // @ts-ignore
     recursive,
     selectedId,
-  } = config;
+  } = config || {} as ValidatedConfig | ValidatedParentConfig;
 
   const subReducer = getSubReducer(objectName, config, actionTypes)
-  const reducer = (state, action) => {
+  const reducer = (state: any, action: any) => {
     if (!parent) {
       let subState = subReducer(state, action);
       // subState can either be null or an object:
@@ -323,8 +338,8 @@ export default (objectName, config = {}, { actionTypes }) => {
       case actionTypes.actions.clearAll:
         return initialStateRoot(config);
       case actionTypes.actions.setAll:
-        const obj = {};
-        action.payload.map((o) => {
+        const obj = {} as any;
+        action.payload.map((o: any) => {
           if (!obj[o[parent]]) {
             obj[o[parent]] = getInitialState(config);
             obj[o[parent]].list = { [o[byKey]]: o };
@@ -334,7 +349,7 @@ export default (objectName, config = {}, { actionTypes }) => {
         });
         if (recursive) {
           // Create empty state too for children of this object
-          action.payload.map((o) => {
+          action.payload.map((o: any) => {
             if (!obj[o[id]]) {
               obj[o[id]] = getInitialState(config);
             }
