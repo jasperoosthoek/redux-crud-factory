@@ -116,6 +116,9 @@
 ##### Version 0.3.7
 - Fix Typescript errors in `reducerFactory`
 
+##### Version 0.4.0
+- Upgrade `react-redux` & `redux-thunk` to versions compatible with `redux` 5.0.1
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook

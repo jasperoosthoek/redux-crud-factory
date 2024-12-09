@@ -40,7 +40,7 @@ export const getInitialState = ({
 }: ValidatedConfig | ValidatedParentConfig) => ({
   list: null as any,
   actions: {
-    ...getAsyncInitialState('getList'),
+    ...actions.getList ? getAsyncInitialState('getList') : {},
     ...actions.get ? getAsyncInitialState('get') : {},
     ...actions.create ? getAsyncInitialState('create') : {},
     ...actions.delete ? getAsyncInitialState('delete') : {},

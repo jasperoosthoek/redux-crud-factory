@@ -259,9 +259,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
   });
 
   const actionFunctions = {
-    get: (data, { params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getIsLoadingFromState(getState(), 'get')) return;
-
+    get: (data, { params, callback, onError: callerOnError, axiosConfig, args, parent: parentKey } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(
+        getState(),
+        'get',
+        config.parent && { [config.parent]: (params && params[config.parent]) || parentKey || null }
+      )) {
+        return;
+      }
       const { route, method, prepare, callback: actionCallback, onError: actionOnError } = actions.get;
       
       const mergedAxiosConfig = getAxiosConfig({ method, route, params, data, axiosConfig, getState, args, prepare });  
@@ -287,8 +292,14 @@ export default ({ objectName, config, getAllActionDispatchers, getActionDispatch
         callIfFunc(callerOnError, error);
       };
     },
-    getList: ({ params, callback, onError: callerOnError, axiosConfig, args } = {}) => async (dispatch, getState) => {
-      if (getIsLoadingFromState(getState(), 'getList')) return;
+    getList: ({ params, callback, onError: callerOnError, axiosConfig, args, parent: parentKey } = {}) => async (dispatch, getState) => {
+      if (getIsLoadingFromState(
+        getState(),
+        'getList',
+        config.parent && { [config.parent]: (params && params[config.parent]) || parentKey || null }
+      )) {
+        return;
+      }
       
       const { route, method, prepare, prepareResponse, callback: actionCallback, onError: actionOnError } = actions.getList;
       const mergedAxiosConfig = getAxiosConfig({ method, route, params, axiosConfig, getState, args, prepare });
