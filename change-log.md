@@ -122,6 +122,12 @@
 ##### Version 0.4.1
 - Include `react-redux` as dependency
 
+##### Version 0.4.2
+- Include `react-redux` as peerDependency as well
+
+##### Version 0.4.3
+- Remove duplicate dependencies & devDependencies and only keep peerDependencies
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook
