@@ -1,6 +1,5 @@
 const path = require('path');
 const pkg = require('./package.json');
-const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
   entry: './src/index.ts',
@@ -32,5 +31,8 @@ module.exports = {
     extensions: ['.ts', '.js'],
   },
   target: 'node',
-  externals: [nodeExternals()]
+  externals: {
+    react: 'react',
+    'react-redux': 'react-redux',
+  },
 };

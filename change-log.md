@@ -128,6 +128,9 @@
 ##### Version 0.4.3
 - Remove duplicate dependencies & devDependencies and only keep peerDependencies
 
+##### Version 0.4.4
+- Use `react` & `react-redux` as external modules in webpack config
+
 ##### Upcoming
 - Return `...ClearError` functions in `onResponse` function
 - Make isLoading etc specific when id is given to the hook
