@@ -1,3 +1,9 @@
+### Deprecation notice 
+
+This module is **no longer** actively developed as many design choices were made that made it very difficult to maintain. Most importantly: it proved to be impossible to rewrite to Typescript. Therefore it was first completely rewritten and later ported to use Zustand instead of Redux which dramatically reduced code complexity without compromising on functionality or performance. The rewritten module is called [`@jasperoosthoek/zustand-crud-registry`](https://github.com/jasperoosthoek/zustand-crud-registry).
+
+The new module uses the same `config` concept to manage multiple *CRUDs* in React, however it only supports modern hooks. It abandones the `defaultConfig` concept (i.e. 2 config objects that are merged) and function aren't automatically named. State updates are no longer defined in the config object but in custom hooks. The new module doesn't provide functionality for the `select` and `parent` configuration in Redux Crud Factory which might, or might not be included in the future.
+
 # Redux Crud Factory
 
 Redux Crud Factory is a declarative toolkit that allows for creating [`CRUD`](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) (create, read, update, and delete) actions that allow a [`React`](https://www.npmjs.com/package/react) app to interact with a backend `api`. State management is handled by [`Redux`](https://www.npmjs.com/package/redux) using [`Redux Thunk`](https://www.npmjs.com/package/redux-thunk) middleware. The api calls are performed using [`Axios`](https://www.npmjs.com/package/axios). The backend can be as simple as an `api` based on a [`ViewSet`](https://www.django-rest-framework.org/api-guide/viewsets/) using the [`Django Rest Framework`](https://www.django-rest-framework.org/#example).
@@ -16,16 +22,16 @@ import axios from 'axios';
 export const factory = reduxCrudFactory({
   axios,
   config: {
-    farmAnimals: {
-      route: 'https://example.com/api/farm-animals',
-      actions: {
-        create: true,           // createFarmAnimal(obj) will perform post request to https://example.com/api/farm-animals
-        get: true,              // getFarmAnimal(42) will perform get request to https://example.com/api/farm-animals/42
-        getList: true,          // getFarmAnimalsList() will perform get request to https://example.com/api/farm-animals
-        update: true,           // updateFarmAnimal(obj) will perform patch request to https://example.com/api/farm-animals/42
-        delete: true,           // deleteFarmAnimal(obj) will perform delete request to https://example.com/api/farm-animals/42
-      },
+  farmAnimals: {
+    route: 'https://example.com/api/farm-animals',
+    actions: {
+      create: true,       // createFarmAnimal(obj) will perform post request to https://example.com/api/farm-animals
+      get: true,          // getFarmAnimal(42) will perform get request to https://example.com/api/farm-animals/42
+      getList: true,      // getFarmAnimalsList() will perform get request to https://example.com/api/farm-animals
+      update: true,       // updateFarmAnimal(obj) will perform patch request to https://example.com/api/farm-animals/42
+      delete: true,       // deleteFarmAnimal(obj) will perform delete request to https://example.com/api/farm-animals/42
     },
+  },
    },
 });
 ```
@@ -39,11 +45,11 @@ import otherAxios from './OtherAxios';
 
 // Our object name 'farmAnimals' must be camelCase
 export const factory = reduxCrudFactory({
-  axios: axios.create({                                   // Default axios instance that is used for each factory in the config object
+  axios: axios.create({                   // Default axios instance that is used for each factory in the config object
     baseURL: 'https://example.com'
   }),
-  onError: console.error,                                 // Log errors to console or use react-toastify
-  actions: {                                              // Default actions for all the factories
+  onError: console.error,                 // Log errors to console or use react-toastify
+  actions: {                              // Default actions for all the factories
     get: true,
     getList: true,
     create: true,
@@ -52,32 +58,32 @@ export const factory = reduxCrudFactory({
   },
   config: {
     farmAnimals: {
-      route: '/api/farm-animals/',                      // Trailing slash here
-      actions: { get: true },                           // Duplicate get action as it is already available, can be removed
+      route: '/api/farm-animals/',          // Trailing slash here
+      actions: { get: true },               // Duplicate get action as it is already available, can be removed
     },
     plants: {
-      route: '/api/plants',                             // No trailing slash on this route
-      actions: { delete: false },                       // Add or disable actions if you like to don't repeat yourself
-      axios: otherAxios,                                // Maybe this route needs authentication
-      
-      includeActions: {                                 // Create custom actions!
-        sellPlant: {                                    // The following functions are now generated: getPlant, getPlantsList, createPlant, updatePlant & sellPlant
-                              
-          method: 'post',                               // Any http method required
+      route: '/api/plants',                 // No trailing slash on this route
+      actions: { delete: false },           // Add or disable actions if you like to don't repeat yourself
+      axios: otherAxios,                    // Maybe this route needs authentication
+
+      includeActions: {                     // Create custom actions!
+        sellPlant: {                          // The following functions are now generated: getPlant, getPlantsList, createPlant, updatePlant & sellPlant
+                    
+          method: 'post',                     // Any http method required
           
-          route: ({ id }) =>                            // route can be string or function called when you call sellPlant(plant, { args: { your stuff.. }, params ))
-            `/api/plants/${id}/sell`,                   // Request params are handled automatically, args can be used in route, prepare or onResponse
-            
-          prepare: (plant, { args, params } =>          // Do something with additional args or params before data is sent to api
-            ({ ...plant }), 
-                                                        // Handle response.data from api. 
+          route: ({ id }) =>                  // route can be string or function called when you call sellPlant(plant, { args: { your stuff.. }, params ))
+          `/api/plants/${id}/sell`,           // Request params are handled automatically, args can be used in route, prepare or onResponse
+          
+          prepare: (plant, { args, params } =>      // Do something with additional args or params before data is sent to api
+          ({ ...plant }), 
+                                // Handle response.data from api. 
           onResponse: (plant, { updatePlant, getFarmAnimalsList, params, args }) =>
-            {
-              updatePlant(plant);                       // All redux actions are available here. Update the plant in the state
-              getFarmAnimalsList({                      // Also request farmAnimals based on this plant id. State update will be automatic as
-                params: plant: plant.id,                // getFarmAnimalsList() is a standard action
-               });
-            },
+          {
+            updatePlant(plant);             // All redux actions are available here. Update the plant in the state
+            getFarmAnimalsList({            // Also request farmAnimals based on this plant id. State update will be automatic as
+            params: plant: plant.id,        // getFarmAnimalsList() is a standard action
+            });
+          },
           },
         },
       },
@@ -127,33 +133,33 @@ import thunk from 'redux-thunk';
 
 // Log each redux action without changing the state. Not required but this allows us to see what's going on under the hood.
 const consoleLogReducer = (state = null, { type, ...action }) => {
-    console.log(type, action, state);
-    return state;
+  console.log(type, action, state);
+  return state;
 }
 
 const rootReducer = (state, action) => consoleLogReducer(
-    combineReducers({
-        ...factory.reducers
-        // Add more reducers here...
-    })(state, action),
-    action
+  combineReducers({
+    ...factory.reducers
+    // Add more reducers here...
+  })(state, action),
+  action
 );
 
 // The `Root` component used in our React App.
 const Root = ({ children, initialState = {} }) => {
-    const middleware = [thunk];
+  const middleware = [thunk];
 
-    const store = createStore(
-        rootReducer(,
-        initialState,
-        applyMiddleware(...middleware)
-    );
+  const store = createStore(
+    rootReducer(,
+    initialState,
+    applyMiddleware(...middleware)
+  );
 
-    return (
-        <Provider store={store}>
-            {children}
-        </Provider>
-    );
+  return (
+    <Provider store={store}>
+      {children}
+    </Provider>
+  );
 };
 ```
 
@@ -163,16 +169,16 @@ Here the data will be saved in the redux store like this `{ farmAnimals: { ... }
 In the simple example above the specification for a complete `CRUD` are created. The api response is assumed to be:
 ```javascript
 [
-    {
-        id: 1,
-        type: 'donkey',
-        name: 'Benjamin'
-    },
-    {
-        id: 2,
-        type: 'goat',
-        name: 'Muriel'
-    }
+  {
+    id: 1,
+    type: 'donkey',
+    name: 'Benjamin'
+  },
+  {
+    id: 2,
+    type: 'goat',
+    name: 'Muriel'
+  }
 ]
 ```
 
@@ -180,28 +186,28 @@ In the simple example above the specification for a complete `CRUD` are created.
 
 ```javascript
 {
-    farmAnimals: {
-        list: {
-            1: {
-                id: 1,
-                type: 'donkey',
-                name: 'Benjamin',
-            },
-            2: {
-                id: 2,
-                type: 'goat',
-                name: 'Muriel',
-            },
-        },
-        createError: null,
-        createIsLoading: false,
-        deleteError: null,
-        deleteIsLoading: false,
-        getListError: null,
-        getListIsLoading: false,
-        updateError: null,
-        updateIsLoading: false
+  farmAnimals: {
+    list: {
+      1: {
+        id: 1,
+        type: 'donkey',
+        name: 'Benjamin',
+      },
+      2: {
+        id: 2,
+        type: 'goat',
+        name: 'Muriel',
+      },
     },
+    createError: null,
+    createIsLoading: false,
+    deleteError: null,
+    deleteIsLoading: false,
+    getListError: null,
+    getListIsLoading: false,
+    updateError: null,
+    updateIsLoading: false
+  },
 }
 ```
 
@@ -216,28 +222,28 @@ import { connect } from 'react-redux';
 
 // Feel free to use functional components instead.
 class FarmAnimalsList extends Component {
-    componentDidMount() {
-        this.props.getFarmAnimalsList();
-    }
+  componentDidMount() {
+    this.props.getFarmAnimalsList();
+  }
 
-    render() {
-        const { getFarmAnimalsIsLoading, farmAnimalsList, createFarmAnimal } = this.props;
-        
-        if (getFarmAnimalsIsLoading || !farmAnimalsList) return 'Loading farm animals...';
-        
-        return <ul>
-            {Object.values(farmAnimalsList).map((farmAnimal, key) =>
-                <li key={key}>
-                    The {farmAnimal.type} is called {farmAnimal.name} 
-                </li>
-            )}
-        </ul>;
-    }
+  render() {
+    const { getFarmAnimalsIsLoading, farmAnimalsList, createFarmAnimal } = this.props;
+    
+    if (getFarmAnimalsIsLoading || !farmAnimalsList) return 'Loading farm animals...';
+    
+    return <ul>
+      {Object.values(farmAnimalsList).map((farmAnimal, key) =>
+        <li key={key}>
+          The {farmAnimal.type} is called {farmAnimal.name} 
+        </li>
+      )}
+    </ul>;
+  }
 };
 
 export default connect(
-    factory.mapToProps.farmAnimals,
-    factory.actions.farmAnimals
+  factory.mapToProps.farmAnimals,
+  factory.actions.farmAnimals
 )(FarmAnimalsList);
 ```
 and
@@ -247,13 +253,13 @@ import React, { Component } from 'react';
 import FarmAnimalsList from './FarmAnimals';
 
 class App extends Component {
-    render() {
-        return (
-            <Root>
-                <FarmAnimalsList />
-            </Root>
-        );
-    }
+  render() {
+    return (
+      <Root>
+        <FarmAnimalsList />
+      </Root>
+    );
+  }
 }
 
 export default App;
