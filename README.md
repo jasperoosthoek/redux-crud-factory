@@ -2,7 +2,7 @@
 
 This module is **no longer** actively developed as many design choices were made that made it very difficult to maintain. Most importantly: it proved to be impossible to rewrite to Typescript. Therefore it was first completely rewritten and later ported to use Zustand instead of Redux which dramatically reduced code complexity without compromising on functionality or performance. The rewritten module is called [`@jasperoosthoek/zustand-crud-registry`](https://github.com/jasperoosthoek/zustand-crud-registry).
 
-The new module uses the same `config` concept to manage multiple *CRUDs* in React, however it only supports modern hooks. It abandones the `defaultConfig` concept (i.e. 2 config objects that are merged) and function aren't automatically named. State updates are no longer defined in the config object but in custom hooks. The new module doesn't provide functionality for the `select` and `parent` configuration in Redux Crud Factory which might, or might not be included in the future.
+The new module uses the same `config` concept to manage multiple *CRUDs* in React, however it only supports modern hooks. It abandones the `defaultConfig` concept (i.e. 2 config objects that are merged) and functions aren't automatically named. State updates are no longer defined in the config object, which caused *circular* typescript relations, but in custom hooks where types are known. The new module doesn't provide functionality for the `select` and `parent` configuration of `Redux Crud Factory` which might, or might not be included in the future.
 
 # Redux Crud Factory
 
